@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "FIFA Auto Flow",
+  "version": "1.5.0",
+  "description": "Automatically navigates through FIFA signup and lottery application flow",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "management",
+    "webNavigation",
+    "debugger"
+  ],
+  "host_permissions": [
+    "*://whoerip.com/*",
+    "*://*.whoerip.com/*",
+    "*://auth.fifa.com/*",
+    "*://*.fifa.com/*",
+    "*://fifa-fwc26-us.tickets.fifa.com/*",
+    "*://access.tickets.fifa.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://whoerip.com/multilogin/*", "*://*.whoerip.com/multilogin/*"],
+      "js": ["whoerip-content.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["*://auth.fifa.com/*"],
+      "js": ["auth-content.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://fifa-fwc26-us.tickets.fifa.com/*",
+        "*://*.tickets.fifa.com/*",
+        "*://tickets.fifa.com/*",
+        "*://access.tickets.fifa.com/*"
+      ],
+      "exclude_matches": [
+        "*://*.stripe.com/*",
+        "*://*.adyen.com/*",
+        "*://*.paypal.com/*",
+        "*://*.braintree.com/*",
+        "*://*.checkout.com/*"
+      ],
+      "js": ["tickets-content.js"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
