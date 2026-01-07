@@ -132,27 +132,6 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('[FIFA Auto Flow] Extension installed');
 });
 
-// Auto-refresh on connection errors for FIFA ticket pages
-// Listen for web navigation errors (ERR_CONNECTION_FAILED, etc.)
-chrome.webNavigation.onErrorOccurred.addListener((details) => {
-  // Only handle main frame (not iframes)
-  if (details.frameId !== 0) return;
-
-  const url = details.url || '';
-
-  // Skip session expired / social-login / account pages
-  if (url.includes('social-login') || url.includes('OIDC') || url.includes('oidc') || url.includes('/account')) {
-    console.log('[FIFA Auto Flow] Session/OIDC/Account page error, NOT refreshing');
-    return;
-  }
-
-  // Only refresh FIFA ticket pages
-  if (url.includes('fifa.com') || url.includes('tickets.fifa')) {
-    console.log('[FIFA Auto Flow] Connection error detected on FIFA page:', details.error, '- refreshing in 3 seconds...');
-
-    setTimeout(() => {
-      chrome.tabs.reload(details.tabId);
-      console.log('[FIFA Auto Flow] Refreshed tab:', details.tabId);
-    }, 3000);
-  }
-});
+// Auto-refresh on connection errors - DISABLED by user request
+// Was causing homepage redirect issues
+// chrome.webNavigation.onErrorOccurred.addListener((details) => { ... });
