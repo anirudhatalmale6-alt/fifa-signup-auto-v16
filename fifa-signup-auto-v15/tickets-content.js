@@ -21,10 +21,11 @@
     return;
   }
 
-  // Skip if session expired page or social-login/OIDC callback
+  // Skip if session expired page or social-login/OIDC callback or account page
   if (currentUrl.includes('social-login') || currentUrl.includes('oidc') ||
+      currentUrl.includes('/account') ||
       document.title.toLowerCase().includes('session') || document.title.toLowerCase().includes('expired')) {
-    console.log('[FIFA Auto Flow] Session expired or OIDC callback page, skipping');
+    console.log('[FIFA Auto Flow] Session expired/OIDC/Account page, skipping');
     return;
   }
 

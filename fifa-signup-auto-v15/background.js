@@ -140,9 +140,9 @@ chrome.webNavigation.onErrorOccurred.addListener((details) => {
 
   const url = details.url || '';
 
-  // Skip session expired / social-login pages
-  if (url.includes('social-login') || url.includes('OIDC') || url.includes('oidc')) {
-    console.log('[FIFA Auto Flow] Session/OIDC page error, NOT refreshing');
+  // Skip session expired / social-login / account pages
+  if (url.includes('social-login') || url.includes('OIDC') || url.includes('oidc') || url.includes('/account')) {
+    console.log('[FIFA Auto Flow] Session/OIDC/Account page error, NOT refreshing');
     return;
   }
 
