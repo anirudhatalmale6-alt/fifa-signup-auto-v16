@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Switcher Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 { margin-bottom: 15px; color: #ff6b6b; font-size: 1.2rem; }
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #fff;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        textarea:focus { outline: none; border-color: #ff6b6b; }
+        textarea::placeholder { color: #666; }
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,107,107,0.3);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: rgba(40,167,69,0.2);
+            border: 1px solid #28a745;
+            color: #28a745;
+        }
+        .status.error {
+            display: block;
+            background: rgba(220,53,69,0.2);
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+        .info-box {
+            background: rgba(255,107,107,0.1);
+            border: 1px solid rgba(255,107,107,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .shortcut-box {
+            display: inline-block;
+            background: rgba(255,107,107,0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #ff6b6b;
+        }
+        .proxy-count { color: #feca57; font-weight: bold; font-size: 1.5rem; }
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proxy Switcher</h1>
+        <p class="subtitle">Random proxy switching with auto-authentication</p>
+
+        <div class="card">
+            <h2>How It Works</h2>
+            <div class="info-box">
+                <p><span class="shortcut-box">Alt+C</span> <strong>Switch Proxy</strong> - Picks random proxy + auto-authenticates + refreshes page</p>
+                <br>
+                <p><strong>Workflow:</strong></p>
+                <p>1. Start with no proxy → Pass CAPTCHA</p>
+                <p>2. Press <span class="shortcut-box">Alt+C</span> → Random proxy enabled + page refreshes</p>
+                <p>3. Continue with proxy active (no login popup!)</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Paste Proxy List</h2>
+            <p style="color:#888; margin-bottom:10px;">Format: <code>host:port:username:password</code> (one per line)</p>
+            <textarea id="proxyList" placeholder="b2b-s15.liveproxies.io:7383:LV22356609-lv_us-65693:BWT3m8egQvp4MM8l9in5
+geo.iproyal.com:12321:user1:pass1
+proxy.example.com:8080:user2:pass2"></textarea>
+            <p style="margin-top:10px;">Proxies loaded: <span class="proxy-count" id="proxyCount">0</span></p>
+        </div>
+
+        <div class="card">
+            <h2>Generate Extension</h2>
+            <button class="btn btn-primary" onclick="generateExtension()" style="font-size:1.2rem; padding:18px 36px;">
+                Generate Proxy Switcher (.zip)
+            </button>
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const proxyListEl = document.getElementById('proxyList');
+        const proxyCountEl = document.getElementById('proxyCount');
+
+        proxyListEl.addEventListener('input', updateCount);
+
+        function updateCount() {
+            const lines = proxyListEl.value.trim().split('\n').filter(l => l.trim());
+            proxyCountEl.textContent = lines.length;
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = 'status ' + type;
+        }
+
+        async function generateExtension() {
+            const lines = proxyListEl.value.trim().split('\n').filter(l => l.trim());
+            if (lines.length === 0) {
+                showStatus('Please paste at least one proxy!', 'error');
+                return;
+            }
+
+            showStatus('Generating extension...', 'success');
+
+            // Parse proxies
+            const proxies = lines.map(line => {
+                const parts = line.trim().split(':');
+                return {
+                    host: parts[0] || '',
+                    port: parseInt(parts[1]) || 8080,
+                    user: parts[2] || '',
+                    pass: parts[3] || ''
+                };
+            }).filter(p => p.host && p.port);
+
+            if (proxies.length === 0) {
+                showStatus('No valid proxies found! Use format: host:port:user:pass', 'error');
+                return;
+            }
+
+            const proxyData = JSON.stringify(proxies);
+
+            const zip = new JSZip();
+
+            // manifest.json
+            zip.file('manifest.json', JSON.stringify({
+                "manifest_version": 3,
+                "name": "Proxy Switcher",
+                "version": "1.0.0",
+                "description": "Random proxy switching with auto-auth",
+                "permissions": ["storage", "activeTab", "scripting", "tabs", "proxy", "webRequest", "webRequestAuthProvider"],
+                "action": { "default_popup": "popup.html", "default_icon": "icon48.png" },
+                "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+                "background": { "service_worker": "background.js" },
+                "commands": {
+                    "switch-proxy": { "suggested_key": { "default": "Alt+C" }, "description": "Switch to random proxy" }
+                },
+                "host_permissions": ["<all_urls>"]
+            }, null, 2));
+
+            // background.js
+            zip.file('background.js', `
+const proxies = ${proxyData};
+let currentProxy = null;
+
+chrome.commands.onCommand.addListener(async (command) => {
+    if (command === 'switch-proxy') {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        await switchToRandomProxy(tab);
+    }
+});
+
+async function switchToRandomProxy(tab) {
+    // Pick random proxy
+    const proxy = proxies[Math.floor(Math.random() * proxies.length)];
+    currentProxy = proxy;
+
+    console.log('[ProxySwitcher] Switching to:', proxy.host, proxy.port);
+
+    // Store auth credentials FIRST
+    if (proxy.user && proxy.pass) {
+        await chrome.storage.local.set({
+            proxyAuth: { user: proxy.user, pass: proxy.pass },
+            currentProxy: proxy
+        });
+        console.log('[ProxySwitcher] Auth stored for:', proxy.user);
+    }
+
+    // Small delay to ensure auth is stored
+    await new Promise(r => setTimeout(r, 100));
+
+    // Set proxy configuration
+    const config = {
+        mode: 'fixed_servers',
+        rules: {
+            singleProxy: {
+                scheme: 'http',
+                host: proxy.host,
+                port: proxy.port
+            },
+            bypassList: ['localhost', '127.0.0.1']
+        }
+    };
+
+    try {
+        await chrome.proxy.settings.set({ value: config, scope: 'regular' });
+
+        // Show notification
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (host, port) => {
+                const n = document.createElement('div');
+                n.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;font-weight:bold;';
+                n.textContent = 'Proxy: ' + host + ':' + port + ' - Refreshing...';
+                document.body.appendChild(n);
+            },
+            args: [proxy.host, proxy.port]
+        });
+
+        // Refresh after delay
+        setTimeout(() => {
+            chrome.tabs.reload(tab.id);
+        }, 800);
+
+    } catch (e) {
+        console.error('[ProxySwitcher] Error:', e);
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (err) => { alert('Proxy error: ' + err); },
+            args: [e.message]
+        });
+    }
+}
+
+async function disableProxy(tab) {
+    await chrome.proxy.settings.clear({ scope: 'regular' });
+    await chrome.storage.local.remove(['proxyAuth', 'currentProxy']);
+    currentProxy = null;
+
+    chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+            const n = document.createElement('div');
+            n.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc3545;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;font-weight:bold;';
+            n.textContent = 'Proxy disabled - Refreshing...';
+            document.body.appendChild(n);
+        }
+    });
+
+    setTimeout(() => {
+        chrome.tabs.reload(tab.id);
+    }, 800);
+}
+
+// Handle messages from popup
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === 'switchProxy') {
+        chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+            switchToRandomProxy(tab);
+        });
+        sendResponse({ success: true });
+    }
+    if (msg.action === 'disableProxy') {
+        chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+            disableProxy(tab);
+        });
+        sendResponse({ success: true });
+    }
+    if (msg.action === 'getStatus') {
+        chrome.storage.local.get(['currentProxy']).then(result => {
+            sendResponse({ proxy: result.currentProxy || null, total: proxies.length });
+        });
+        return true;
+    }
+});
+
+// Handle proxy authentication
+chrome.webRequest.onAuthRequired.addListener(
+    async (details) => {
+        console.log('[ProxySwitcher] Auth requested');
+        const result = await chrome.storage.local.get(['proxyAuth']);
+        if (result.proxyAuth && result.proxyAuth.user && result.proxyAuth.pass) {
+            console.log('[ProxySwitcher] Providing auth for:', result.proxyAuth.user);
+            return {
+                authCredentials: {
+                    username: result.proxyAuth.user,
+                    password: result.proxyAuth.pass
+                }
+            };
+        }
+        return { cancel: false };
+    },
+    { urls: ['<all_urls>'] },
+    ['asyncBlocking']
+);
+
+console.log('[ProxySwitcher] Loaded with', proxies.length, 'proxies');
+`);
+
+            // popup.html
+            zip.file('popup.html', `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { width: 280px; padding: 15px; font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; }
+        h3 { margin: 0 0 15px 0; color: #ff6b6b; font-size: 18px; text-align: center; }
+        .status { background: rgba(255,107,107,0.1); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+        .proxy-info { color: #feca57; font-weight: bold; word-break: break-all; }
+        .proxy-count { color: #888; font-size: 12px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+        .btn-switch { background: linear-gradient(90deg, #ff6b6b, #feca57); color: #fff; }
+        .btn-disable { background: linear-gradient(90deg, #6c757d, #495057); color: #fff; }
+        button:hover { opacity: 0.9; }
+        .shortcut { font-size: 11px; color: #888; text-align: center; margin-top: 10px; }
+        .key { background: rgba(255,107,107,0.2); padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <h3>🔄 Proxy Switcher</h3>
+    <div class="status">
+        <div class="proxy-info" id="currentProxy">No proxy active</div>
+        <div class="proxy-count" id="proxyCount">0 proxies loaded</div>
+    </div>
+    <button class="btn-switch" id="switchBtn">Switch to Random Proxy</button>
+    <button class="btn-disable" id="disableBtn">Disable Proxy</button>
+    <div class="shortcut">
+        <span class="key">Alt+C</span> Switch proxy + refresh
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>`);
+
+            // popup.js
+            zip.file('popup.js', `
+document.addEventListener('DOMContentLoaded', async () => {
+    const response = await chrome.runtime.sendMessage({ action: 'getStatus' });
+
+    document.getElementById('proxyCount').textContent = response.total + ' proxies loaded';
+
+    if (response.proxy) {
+        document.getElementById('currentProxy').textContent = response.proxy.host + ':' + response.proxy.port;
+    } else {
+        document.getElementById('currentProxy').textContent = 'No proxy active';
+    }
+
+    document.getElementById('switchBtn').addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'switchProxy' });
+        window.close();
+    });
+
+    document.getElementById('disableBtn').addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'disableProxy' });
+        window.close();
+    });
+});
+`);
+
+            // Icons
+            const svg16 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect fill="#ff6b6b" width="16" height="16" rx="3"/><text x="8" y="12" font-size="10" fill="#fff" text-anchor="middle">P</text></svg>';
+            const svg48 = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect fill="#ff6b6b" width="48" height="48" rx="8"/><text x="24" y="34" font-size="28" fill="#fff" text-anchor="middle">P</text></svg>';
+            const svg128 = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect fill="#ff6b6b" width="128" height="128" rx="20"/><text x="64" y="90" font-size="72" fill="#fff" text-anchor="middle">P</text></svg>';
+
+            async function svgToPng(svg, size) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const blob = new Blob([svg], {type: 'image/svg+xml'});
+                    const url = URL.createObjectURL(blob);
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = size; canvas.height = size;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        canvas.toBlob(resolve, 'image/png');
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                });
+            }
+
+            zip.file('icon16.png', await svgToPng(svg16, 16));
+            zip.file('icon48.png', await svgToPng(svg48, 48));
+            zip.file('icon128.png', await svgToPng(svg128, 128));
+
+            const blob = await zip.generateAsync({type: 'blob'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'proxy-switcher.zip';
+            a.click();
+
+            showStatus('Extension downloaded! Load in Chrome: Extensions → Developer mode → Load unpacked', 'success');
+        }
+    </script>
+</body>
+</html>
