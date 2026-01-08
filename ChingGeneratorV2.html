@@ -408,20 +408,26 @@ chrome.commands.onCommand.addListener(async (command) => {
         };
 
         try {
-            await chrome.proxy.settings.set({ value: config, scope: 'regular' });
-
-            // Store auth credentials if provided
+            // Store auth credentials FIRST (before proxy is enabled)
             if (proxyUser && proxyPass) {
                 await chrome.storage.local.set({ proxyAuth: { user: proxyUser, pass: proxyPass } });
+                console.log('[Ching] Auth saved:', proxyUser);
             }
 
+            // Small delay to ensure auth is stored
+            await new Promise(r => setTimeout(r, 100));
+
+            // Now enable proxy
+            await chrome.proxy.settings.set({ value: config, scope: 'regular' });
+            console.log('[Ching] Proxy enabled:', proxyHost, proxyPort);
+
             // Show notification and refresh
-            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (host, port) => {
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (host, port, user) => {
                 const n = document.createElement('div');
                 n.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;';
-                n.textContent = 'Proxy enabled: ' + host + ':' + port + ' - Refreshing...';
+                n.textContent = 'Proxy: ' + host + ':' + port + ' (auth: ' + user + ') - Refreshing...';
                 document.body.appendChild(n);
-            }, args: [proxyHost, proxyPort] });
+            }, args: [proxyHost, proxyPort, proxyUser || 'none'] });
 
             // Refresh page after short delay
             setTimeout(() => {
@@ -568,7 +574,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // Handle proxy authentication
 chrome.webRequest.onAuthRequired.addListener(
     async (details) => {
+        console.log('[Ching] Proxy auth requested for:', details.challenger);
         const result = await chrome.storage.local.get(['proxyAuth']);
+        console.log('[Ching] Cached auth:', result.proxyAuth ? 'yes' : 'no');
         if (result.proxyAuth && result.proxyAuth.user && result.proxyAuth.pass) {
             return {
                 authCredentials: {
@@ -577,7 +585,7 @@ chrome.webRequest.onAuthRequired.addListener(
                 }
             };
         }
-        return {};
+        return { cancel: false };
     },
     { urls: ['<all_urls>'] },
     ['asyncBlocking']
