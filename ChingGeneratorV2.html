@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ching Generator V2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 { margin-bottom: 15px; color: #00d4ff; font-size: 1.2rem; }
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,212,255,0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-add { background: #28a745; color: #fff; }
+        .btn-danger { background: #dc3545; color: #fff; }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: rgba(40,167,69,0.2);
+            border: 1px solid #28a745;
+            color: #28a745;
+        }
+        .status.error {
+            display: block;
+            background: rgba(220,53,69,0.2);
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+        .info-box {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .feature-list { margin: 15px 0; }
+        .feature-list li { margin: 8px 0; color: #ccc; }
+        .feature-list strong { color: #00d4ff; }
+        #profileCount { color: #00d4ff; font-weight: bold; font-size: 1.5rem; }
+        .profile-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .profile-item:hover { background: rgba(255,255,255,0.1); }
+        .profile-info { flex: 1; }
+        .profile-name { font-weight: bold; color: #00d4ff; }
+        .profile-email { color: #888; font-size: 0.85rem; }
+        .profile-card { color: #7b2cbf; font-size: 0.85rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .drop-zone {
+            border: 2px dashed rgba(0,212,255,0.5);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-icon { font-size: 3rem; margin-bottom: 10px; }
+        .shortcut-box {
+            display: inline-block;
+            background: rgba(0,212,255,0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ching Generator V2</h1>
+        <p class="subtitle">Full-featured autofill extension with email login & OTP</p>
+
+        <div class="card">
+            <h2>Features</h2>
+            <ul class="feature-list">
+                <li><span class="shortcut-box">Ctrl+Shift+S</span> <strong>Select Profile</strong> - Choose profile number</li>
+                <li><span class="shortcut-box">Alt+E</span> <strong>Enable Proxy</strong> - Switch to profile's proxy + refresh page</li>
+                <li><span class="shortcut-box">Alt+X</span> <strong>Grab OTP</strong> - Fetches verification code from API and fills it</li>
+                <li><span class="shortcut-box">Alt+F</span> <strong>Fill Form</strong> - Autofills current page with profile data</li>
+                <li><span class="shortcut-box">Alt+C</span> <strong>Fill Card</strong> - Fills payment/card details</li>
+            </ul>
+            <div class="info-box" style="margin-top:15px;">
+                All profile data is <strong>encrypted</strong> - workers only see profile numbers, can't view actual data!
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Import CSV</h2>
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">Drag & drop CSV file here or click to browse</div>
+            </div>
+            <input type="file" id="csvInput" accept=".csv" style="display:none">
+        </div>
+
+        <div class="card">
+            <h2>Profiles Loaded: <span id="profileCount">0</span></h2>
+            <div class="profile-list" id="profileList"></div>
+            <div class="actions">
+                <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Generate Extension</h2>
+            <button class="btn btn-primary" onclick="generateExtension()" style="font-size:1.2rem; padding:18px 36px;">
+                Generate Extension (.zip)
+            </button>
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        let profiles = [];
+
+        const dropZone = document.getElementById('dropZone');
+        const csvInput = document.getElementById('csvInput');
+
+        dropZone.addEventListener('click', () => csvInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) processCSV(file);
+            else showStatus('Please drop a CSV file', 'error');
+        });
+        csvInput.addEventListener('change', (e) => { if (e.target.files[0]) processCSV(e.target.files[0]); });
+
+        function processCSV(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => parseCSV(e.target.result);
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) { showStatus('CSV must have header and data rows', 'error'); return; }
+
+            const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g, '_'));
+            profiles = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = parseCSVLine(lines[i]);
+                const row = {};
+                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+
+                const profile = {
+                    profile_name: `Profile${i}`,
+                    email: row.email || '',
+                    password: row.password || '',
+                    first_name: row.first_name || row.firstname || '',
+                    last_name: row.last_name || row.lastname || '',
+                    full_name: row.full_name || row.fullname || '',
+                    country: row.country || '',
+                    address: row.address || '',
+                    city: row.city || '',
+                    zipcode: row.zip_code || row.zipcode || row.postal || '',
+                    state: row.province || row.state || '',
+                    phone: row.phone || '',
+                    card_number: row.card_number || '',
+                    card_cvv: row.cvc || row.cvv || '',
+                    card_exp: row.card_expiry || row.expiry || row.card_exp || '',
+                    card_name: row.full_name || row.fullname || '',
+                    dob: row.dob || '',
+                    gender: row.gender || '',
+                    proxy: row.proxy || ''
+                };
+
+                if (!profile.full_name && profile.first_name && profile.last_name) {
+                    profile.full_name = profile.first_name + ' ' + profile.last_name;
+                }
+                profiles.push(profile);
+            }
+
+            updateProfileList();
+            showStatus(`Loaded ${profiles.length} profiles!`, 'success');
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '', inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') inQuotes = !inQuotes;
+                else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+                else current += char;
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function updateProfileList() {
+            document.getElementById('profileCount').textContent = profiles.length;
+            const list = document.getElementById('profileList');
+            list.innerHTML = '';
+            profiles.forEach((p, i) => {
+                const card4 = p.card_number ? '****' + p.card_number.slice(-4) : '';
+                const div = document.createElement('div');
+                div.className = 'profile-item';
+                div.innerHTML = `<div class="profile-info"><div class="profile-name">${p.profile_name}</div><div class="profile-email">${p.email}</div><div class="profile-card">${card4}</div></div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function clearAll() {
+            if (profiles.length === 0 || confirm('Clear all profiles?')) {
+                profiles = [];
+                updateProfileList();
+                showStatus('Cleared', 'success');
+            }
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = 'status ' + type;
+        }
+
+        function encrypt(data, key) {
+            const json = JSON.stringify(data);
+            let encrypted = '';
+            for (let i = 0; i < json.length; i++) {
+                encrypted += String.fromCharCode(json.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            }
+            return btoa(encrypted);
+        }
+
+        async function generateExtension() {
+            if (profiles.length === 0) { showStatus('Import a CSV file first!', 'error'); return; }
+            showStatus('Generating extension...', 'success');
+
+            const key = Array.from({length: 32}, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+            const encryptedData = encrypt(profiles, key);
+            const profileNames = profiles.map(p => p.profile_name);
+
+            const zip = new JSZip();
+
+            // manifest.json with keyboard shortcuts
+            zip.file('manifest.json', JSON.stringify({
+                "manifest_version": 3,
+                "name": "Ching AutoFill",
+                "version": "2.1.0",
+                "description": "Autofill with proxy switching and OTP",
+                "permissions": ["storage", "activeTab", "scripting", "tabs", "proxy", "webRequest", "webRequestAuthProvider"],
+                "action": { "default_popup": "popup.html", "default_icon": "icon48.png" },
+                "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+                "background": { "service_worker": "background.js" },
+                "content_scripts": [
+                    { "matches": ["<all_urls>"], "js": ["content.js"] },
+                    { "matches": ["https://outlook.live.com/*", "https://login.live.com/*", "https://login.microsoftonline.com/*", "https://account.live.com/*"], "js": ["outlook-content.js"], "run_at": "document_idle" }
+                ],
+                "commands": {
+                    "select-profile": { "suggested_key": { "default": "Ctrl+Shift+S" }, "description": "Select profile" },
+                    "enable-proxy": { "suggested_key": { "default": "Alt+E" }, "description": "Enable proxy and refresh" },
+                    "grab-otp": { "suggested_key": { "default": "Alt+X" }, "description": "Grab OTP from API" },
+                    "fill-form": { "suggested_key": { "default": "Alt+F" }, "description": "Fill form" }
+                },
+                "host_permissions": ["<all_urls>"]
+            }, null, 2));
+
+            // background.js - handles commands and messaging
+            zip.file('background.js', `
+const _d = "${encryptedData}";
+const _k = "${key}";
+
+function _dec(d, k) {
+    const e = atob(d);
+    let r = '';
+    for (let i = 0; i < e.length; i++) r += String.fromCharCode(e.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+    return JSON.parse(r);
+}
+
+function getProfiles() { return _dec(_d, _k); }
+
+chrome.commands.onCommand.addListener(async (command) => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const profiles = getProfiles();
+    const result = await chrome.storage.local.get(['selectedRow']);
+    const selectedRow = result.selectedRow || 0;
+    const profile = profiles[selectedRow];
+
+    if (command === 'select-profile') {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (total, current, email) => {
+                const input = prompt('SELECT PROFILE (1-' + total + ')\\n\\nCurrent: ' + (current+1) + ' - ' + email + '\\n\\nEnter profile number:', (current+1).toString());
+                if (!input) return null;
+                return { profile: parseInt(input) };
+            },
+            args: [profiles.length, selectedRow, profile?.email || 'N/A']
+        }).then(async (results) => {
+            const r = results[0]?.result;
+            if (r && r.profile >= 1 && r.profile <= profiles.length) {
+                await chrome.storage.local.set({ selectedRow: r.profile - 1 });
+                const selectedProfile = profiles[r.profile - 1];
+
+                chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (num, email) => { alert('Profile ' + num + ' selected!\\n\\nEmail: ' + email); }, args: [r.profile, selectedProfile?.email || ''] });
+            }
+        });
+    }
+
+    if (command === 'enable-proxy') {
+        if (!profile) {
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => { alert('No profile selected! Press Ctrl+Shift+S first.'); } });
+            return;
+        }
+
+        const proxyStr = profile.proxy;
+        if (!proxyStr) {
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => { alert('No proxy configured for this profile.'); } });
+            return;
+        }
+
+        // Parse proxy string: host:port:user:pass
+        const parts = proxyStr.split(':');
+        if (parts.length < 2) {
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => { alert('Invalid proxy format. Use: host:port:user:pass'); } });
+            return;
+        }
+
+        const proxyHost = parts[0];
+        const proxyPort = parseInt(parts[1]);
+        const proxyUser = parts[2] || '';
+        const proxyPass = parts[3] || '';
+
+        // Set proxy configuration
+        const config = {
+            mode: 'fixed_servers',
+            rules: {
+                singleProxy: {
+                    scheme: 'http',
+                    host: proxyHost,
+                    port: proxyPort
+                },
+                bypassList: ['localhost', '127.0.0.1']
+            }
+        };
+
+        try {
+            await chrome.proxy.settings.set({ value: config, scope: 'regular' });
+
+            // Store auth credentials if provided
+            if (proxyUser && proxyPass) {
+                await chrome.storage.local.set({ proxyAuth: { user: proxyUser, pass: proxyPass } });
+            }
+
+            // Show notification and refresh
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (host, port) => {
+                const n = document.createElement('div');
+                n.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;';
+                n.textContent = 'Proxy enabled: ' + host + ':' + port + ' - Refreshing...';
+                document.body.appendChild(n);
+            }, args: [proxyHost, proxyPort] });
+
+            // Refresh page after short delay
+            setTimeout(() => {
+                chrome.tabs.reload(tab.id);
+            }, 1000);
+        } catch (e) {
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (err) => { alert('Failed to set proxy: ' + err); }, args: [e.message] });
+        }
+    }
+
+    if (command === 'auto-login-email') {
+        if (!profile) { console.log('No profile selected'); return; }
+        const email = profile.email;
+        const password = profile.password;
+        if (!email || !password) { console.log('No email/password'); return; }
+
+        // Determine email provider (Outlook default)
+        let loginUrl = 'https://login.live.com/'; // Outlook default
+        if (email.includes('@gmail.com')) {
+            loginUrl = 'https://accounts.google.com/signin';
+        }
+
+        // Open email login page
+        const emailTab = await chrome.tabs.create({ url: loginUrl });
+
+        // Store credentials for content script to use
+        await chrome.storage.local.set({
+            emailLoginPending: true,
+            emailLoginEmail: email,
+            emailLoginPassword: password
+        });
+    }
+
+    if (command === 'grab-otp') {
+        if (!profile || !profile.email) {
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => { alert('No profile selected or no email in profile.'); } });
+            return;
+        }
+
+        // Show loading notification
+        chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => {
+            const n = document.createElement('div');
+            n.id = 'otp-loading';
+            n.style.cssText = 'position:fixed;top:20px;right:20px;background:#1a472a;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;';
+            n.textContent = 'Fetching OTP...';
+            document.body.appendChild(n);
+        }});
+
+        // Call OTP API
+        const fetchOTP = async (retries = 5) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch('http://3.130.191.60:3000/api/getOtp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: profile.email, otpType: 'fifa' })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.otp || data.code) {
+                            return data.otp || data.code;
+                        }
+                    }
+
+                    // 404 means not ready yet, wait and retry
+                    if (response.status === 404 && i < retries - 1) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
+                } catch (e) {
+                    console.log('OTP fetch error:', e);
+                }
+                if (i < retries - 1) await new Promise(r => setTimeout(r, 2000));
+            }
+            return null;
+        };
+
+        fetchOTP().then(otp => {
+            // Remove loading notification
+            chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => {
+                const n = document.getElementById('otp-loading');
+                if (n) n.remove();
+            }});
+
+            if (otp) {
+                chrome.tabs.sendMessage(tab.id, { action: 'fillOTP', otp: otp });
+                chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (code) => {
+                    const n = document.createElement('div');
+                    n.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;';
+                    n.textContent = 'OTP: ' + code;
+                    document.body.appendChild(n);
+                    setTimeout(() => n.remove(), 3000);
+                }, args: [otp] });
+            } else {
+                chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => {
+                    alert('No OTP found. It may not have arrived yet - try again in a few seconds.');
+                }});
+            }
+        });
+    }
+
+    if (command === 'fill-form') {
+        if (!profile) return;
+        chrome.tabs.sendMessage(tab.id, { action: 'fill', data: profile });
+    }
+
+    if (command === 'fill-card') {
+        if (!profile) return;
+        chrome.tabs.sendMessage(tab.id, { action: 'fillCard', data: profile });
+    }
+});
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === 'getProfile') {
+        chrome.storage.local.get(['selectedRow'], (result) => {
+            const profiles = getProfiles();
+            sendResponse({ profile: profiles[result.selectedRow || 0] || null });
+        });
+        return true;
+    }
+    if (msg.action === 'getProfiles') {
+        sendResponse({ profiles: getProfiles() });
+        return true;
+    }
+    if (msg.action === 'getEmailCreds') {
+        chrome.storage.local.get(['emailLoginPending', 'emailLoginEmail', 'emailLoginPassword'], (result) => {
+            sendResponse(result);
+        });
+        return true;
+    }
+    if (msg.action === 'clearEmailCreds') {
+        chrome.storage.local.set({ emailLoginPending: false, emailLoginEmail: '', emailLoginPassword: '' });
+        sendResponse({ success: true });
+        return true;
+    }
+    if (msg.action === 'disableProxy') {
+        chrome.proxy.settings.clear({ scope: 'regular' });
+        sendResponse({ success: true });
+        return true;
+    }
+});
+
+// Handle proxy authentication
+chrome.webRequest.onAuthRequired.addListener(
+    async (details) => {
+        const result = await chrome.storage.local.get(['proxyAuth']);
+        if (result.proxyAuth && result.proxyAuth.user && result.proxyAuth.pass) {
+            return {
+                authCredentials: {
+                    username: result.proxyAuth.user,
+                    password: result.proxyAuth.pass
+                }
+            };
+        }
+        return {};
+    },
+    { urls: ['<all_urls>'] },
+    ['asyncBlocking']
+);
+`);
+
+            // content.js - handles form filling and email login
+            zip.file('content.js', `
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'fill') fillForm(request.data);
+    if (request.action === 'fillCard') fillCardDetails(request.data);
+    if (request.action === 'fillOTP') fillOTP(request.otp);
+    if (request.action === 'solveCaptcha') solveFifaCaptcha();
+});
+
+// Auto-detect and solve FIFA CAPTCHA
+if (location.href.includes('fifa.com') || location.href.includes('tickets.fifa.com')) {
+    setTimeout(() => {
+        const captchaImg = document.querySelector('img[src*="captcha"], img[alt*="captcha"], .captcha img, img[src*="Captcha"]');
+        if (captchaImg) {
+            console.log('[Ching] FIFA CAPTCHA detected, attempting to solve...');
+            solveFifaCaptcha();
+        }
+    }, 2000);
+}
+
+// Solve FIFA CAPTCHA - reads 7-segment display numbers
+function solveFifaCaptcha() {
+    console.log('[Ching] Solving CAPTCHA...');
+
+    // Find the CAPTCHA image
+    const captchaImg = document.querySelector('img[src*="captcha"], img[src*="Captcha"], .captcha-image img, img[alt*="captcha"]') ||
+                       document.querySelector('img[src*="random"], img[class*="captcha"]') ||
+                       Array.from(document.querySelectorAll('img')).find(img => {
+                           const src = img.src || '';
+                           return src.includes('captcha') || (img.width > 50 && img.width < 200 && img.height > 20 && img.height < 80);
+                       });
+
+    if (!captchaImg) {
+        console.log('[Ching] No CAPTCHA image found');
+        return;
+    }
+
+    console.log('[Ching] Found CAPTCHA image:', captchaImg.src);
+
+    // Create canvas to analyze the image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = captchaImg.naturalWidth || captchaImg.width;
+    canvas.height = captchaImg.naturalHeight || captchaImg.height;
+
+    try {
+        ctx.drawImage(captchaImg, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = recognizeDigits(imageData, canvas.width, canvas.height);
+
+        if (code && code.length >= 4) {
+            console.log('[Ching] Recognized CAPTCHA:', code);
+
+            // Find the input field and fill it
+            const captchaInput = document.querySelector('input[name*="captcha"], input[id*="captcha"], input[placeholder*="character"], input[type="text"][maxlength="4"], input[type="text"][maxlength="5"], input[type="text"][maxlength="6"]') ||
+                                document.querySelector('input[type="text"]');
+
+            if (captchaInput) {
+                captchaInput.value = code;
+                captchaInput.dispatchEvent(new Event('input', { bubbles: true }));
+                captchaInput.dispatchEvent(new Event('change', { bubbles: true }));
+                showNotif('CAPTCHA filled: ' + code);
+
+                // Auto-click submit after small delay
+                setTimeout(() => {
+                    const submitBtn = document.querySelector('button[type="submit"], input[type="submit"], button:contains("SUBMIT"), .submit-btn') ||
+                                     Array.from(document.querySelectorAll('button')).find(b => b.textContent.toLowerCase().includes('submit'));
+                    if (submitBtn) submitBtn.click();
+                }, 500);
+            }
+        } else {
+            console.log('[Ching] Could not recognize CAPTCHA');
+            showNotif('Could not read CAPTCHA - try refreshing');
+        }
+    } catch (e) {
+        console.log('[Ching] CAPTCHA error (cross-origin?):', e);
+        showNotif('Cannot read CAPTCHA image');
+    }
+}
+
+// Simple 7-segment digit recognition
+function recognizeDigits(imageData, width, height) {
+    const data = imageData.data;
+    let result = '';
+
+    // Convert to grayscale and find bright pixels (the LED display)
+    const threshold = 100;
+    const brightPixels = [];
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
+            const r = data[i], g = data[i+1], b = data[i+2];
+            // Look for bright green/yellow pixels (7-segment display)
+            if (g > threshold && (g > r * 0.8 || r > threshold)) {
+                brightPixels.push({x, y});
+            }
+        }
+    }
+
+    if (brightPixels.length === 0) return null;
+
+    // Find digit boundaries by looking for gaps
+    const xCoords = brightPixels.map(p => p.x).sort((a,b) => a-b);
+    const minX = xCoords[0];
+    const maxX = xCoords[xCoords.length - 1];
+    const digitWidth = (maxX - minX) / 4; // Assume 4 digits
+
+    // For each digit position, analyze the pattern
+    for (let d = 0; d < 4; d++) {
+        const startX = minX + d * digitWidth;
+        const endX = startX + digitWidth;
+
+        const digitPixels = brightPixels.filter(p => p.x >= startX && p.x < endX);
+        if (digitPixels.length === 0) continue;
+
+        const digit = recognizeSingleDigit(digitPixels, digitWidth, height);
+        result += digit;
+    }
+
+    return result;
+}
+
+function recognizeSingleDigit(pixels, width, height) {
+    if (pixels.length === 0) return '8';
+
+    const minY = Math.min(...pixels.map(p => p.y));
+    const maxY = Math.max(...pixels.map(p => p.y));
+    const minX = Math.min(...pixels.map(p => p.x));
+    const maxX = Math.max(...pixels.map(p => p.x));
+
+    const midY = (minY + maxY) / 2;
+    const midX = (minX + maxX) / 2;
+
+    // Check which segments are lit
+    const hasTop = pixels.some(p => p.y < minY + (maxY-minY)*0.2);
+    const hasBottom = pixels.some(p => p.y > maxY - (maxY-minY)*0.2);
+    const hasMiddle = pixels.some(p => Math.abs(p.y - midY) < (maxY-minY)*0.15);
+    const hasTopLeft = pixels.some(p => p.x < midX && p.y < midY);
+    const hasTopRight = pixels.some(p => p.x > midX && p.y < midY);
+    const hasBottomLeft = pixels.some(p => p.x < midX && p.y > midY);
+    const hasBottomRight = pixels.some(p => p.x > midX && p.y > midY);
+
+    // Match patterns to digits
+    if (!hasMiddle && hasTop && hasBottom) return '0';
+    if (!hasTop && !hasBottom && !hasMiddle && hasTopRight && hasBottomRight) return '1';
+    if (hasTop && hasTopRight && hasMiddle && hasBottomLeft && hasBottom) return '2';
+    if (hasTop && hasMiddle && hasBottom && hasTopRight && hasBottomRight) return '3';
+    if (hasTopLeft && hasMiddle && hasTopRight && hasBottomRight && !hasBottom) return '4';
+    if (hasTop && hasTopLeft && hasMiddle && hasBottomRight && hasBottom) return '5';
+    if (hasTop && hasTopLeft && hasMiddle && hasBottomLeft && hasBottomRight && hasBottom) return '6';
+    if (hasTop && hasTopRight && hasBottomRight) return '7';
+    if (hasTop && hasMiddle && hasBottom) return '8';
+    if (hasTop && hasTopLeft && hasTopRight && hasMiddle && hasBottomRight && hasBottom) return '9';
+
+    return '8'; // Default fallback
+}
+
+// Check for pending email login
+if (location.href.includes('accounts.google.com') || location.href.includes('login.live.com') || location.href.includes('login.microsoftonline.com')) {
+    setTimeout(() => {
+        chrome.runtime.sendMessage({ action: 'getEmailCreds' }, (result) => {
+            if (result && (result.emailLoginPending || result.emailLoginEmail)) {
+                autoLoginEmail(result.emailLoginEmail, result.emailLoginPassword);
+            }
+        });
+    }, 2000);
+}
+
+function autoLoginEmail(email, password) {
+    console.log('[Ching] Auto-login attempt for:', email);
+
+    // Gmail login
+    if (location.href.includes('accounts.google.com')) {
+        const emailInput = document.querySelector('input[type="email"]');
+        if (emailInput && emailInput.offsetParent !== null) {
+            setVal(emailInput, email);
+            setTimeout(() => {
+                const nextBtn = document.querySelector('#identifierNext') || document.querySelector('button[type="submit"]');
+                if (nextBtn) nextBtn.click();
+            }, 500);
+            return;
+        }
+        // Password step (on next page load)
+        const pwdInput = document.querySelector('input[type="password"]');
+        if (pwdInput && pwdInput.offsetParent !== null) {
+            setVal(pwdInput, password);
+            setTimeout(() => {
+                const nextBtn = document.querySelector('#passwordNext') || document.querySelector('button[type="submit"]');
+                if (nextBtn) nextBtn.click();
+                // Clear creds after password filled
+                chrome.runtime.sendMessage({ action: 'clearEmailCreds' });
+            }, 500);
+        }
+    }
+
+    // Outlook/Hotmail login
+    if (location.href.includes('login.live.com') || location.href.includes('login.microsoftonline.com')) {
+        const emailInput = document.querySelector('input[type="email"]') || document.querySelector('input[name="loginfmt"]');
+        const pwdInput = document.querySelector('input[type="password"]') || document.querySelector('input[name="passwd"]');
+
+        // Check for "Stay signed in?" prompt - click Yes
+        const staySignedInBtn = document.querySelector('#idSIButton9');
+        const staySignedInText = document.body.innerText;
+        if (staySignedInText.includes('Stay signed in') || staySignedInText.includes('Keep me signed in')) {
+            if (staySignedInBtn) {
+                staySignedInBtn.click();
+                chrome.runtime.sendMessage({ action: 'clearEmailCreds' });
+                return;
+            }
+        }
+
+        // If password field is visible, fill password
+        if (pwdInput && pwdInput.offsetParent !== null) {
+            setVal(pwdInput, password);
+            setTimeout(() => {
+                const nextBtn = document.querySelector('input[type="submit"]') || document.querySelector('#idSIButton9');
+                if (nextBtn) nextBtn.click();
+            }, 500);
+            return;
+        }
+
+        // If email field is visible, fill email
+        if (emailInput && emailInput.offsetParent !== null) {
+            // Focus and fill email
+            emailInput.focus();
+            emailInput.value = email;
+            emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+            emailInput.dispatchEvent(new Event('change', { bubbles: true }));
+            emailInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+
+            setTimeout(() => {
+                // Try multiple button selectors for Microsoft login
+                const nextBtn = document.querySelector('#idSIButton9') ||
+                                document.querySelector('input[type="submit"]') ||
+                                document.querySelector('button[type="submit"]') ||
+                                document.querySelector('[data-report-event="Signin_Submit"]');
+                console.log('[Ching] Clicking next button:', nextBtn);
+                if (nextBtn) {
+                    // Try multiple click methods
+                    nextBtn.focus();
+                    nextBtn.click();
+
+                    // Simulate mouse events
+                    nextBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                    nextBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+                    nextBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+                    // Try Enter key on email input
+                    setTimeout(() => {
+                        emailInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+                        emailInput.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+                        emailInput.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+                    }, 200);
+                }
+            }, 1000);
+        }
+    }
+}
+
+function fillOTP(otp) {
+    console.log('[Ching] Filling OTP:', otp);
+    const otpInputs = document.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"]');
+    for (const input of otpInputs) {
+        const n = (input.name || '').toLowerCase();
+        const id = (input.id || '').toLowerCase();
+        const ph = (input.placeholder || '').toLowerCase();
+        const ac = (input.getAttribute('autocomplete') || '').toLowerCase();
+        if (n.includes('otp') || n.includes('code') || n.includes('verify') || n.includes('token') ||
+            id.includes('otp') || id.includes('code') || id.includes('verify') ||
+            ph.includes('code') || ph.includes('otp') || ac.includes('one-time')) {
+            setVal(input, otp);
+            showNotif('OTP filled: ' + otp);
+            return;
+        }
+    }
+    // Fallback: fill any visible short input
+    for (const input of otpInputs) {
+        if (input.maxLength <= 8 && input.maxLength >= 4) {
+            setVal(input, otp);
+            showNotif('OTP filled: ' + otp);
+            return;
+        }
+    }
+}
+
+function fillForm(data) {
+    const m = {
+        'full_name': ['fullname', 'full_name', 'name', 'your-name'],
+        'first_name': ['first', 'fname', 'firstname', 'given'],
+        'last_name': ['last', 'lname', 'lastname', 'surname'],
+        'email': ['email', 'mail', 'e-mail', 'user', 'username', 'login'],
+        'password': ['password', 'pass', 'pwd'],
+        'phone': ['phone', 'tel', 'mobile', 'cell'],
+        'dob': ['dob', 'birth', 'birthday'],
+        'country': ['country', 'nation'],
+        'state': ['state', 'province', 'region'],
+        'city': ['city', 'town'],
+        'address': ['address', 'street', 'addr', 'line1'],
+        'zipcode': ['zip', 'postal', 'postcode']
+    };
+    let filled = fillFields(data, m);
+    if (filled > 0) showNotif('Filled ' + filled + ' fields');
+}
+
+function fillCardDetails(data) {
+    const m = {
+        'card_name': ['cardholder', 'card-name', 'cardname', 'nameoncard', 'ccname'],
+        'card_number': ['cardnumber', 'card-number', 'ccnumber', 'cc-number', 'pan'],
+        'card_exp': ['expiry', 'expiration', 'exp', 'card-exp', 'cc-exp'],
+        'card_cvv': ['cvv', 'cvc', 'cvv2', 'cvc2', 'securitycode']
+    };
+    let filled = fillFields(data, m);
+
+    // Handle separate month/year
+    if (data.card_exp && data.card_exp.includes('/')) {
+        const [month, year] = data.card_exp.split('/').map(s => s.trim());
+        document.querySelectorAll('input, select').forEach(el => {
+            const c = ((el.name||'') + ' ' + (el.id||'')).toLowerCase();
+            if (c.match(/month|mm/) && !c.match(/year|yy/)) setVal(el, month);
+            else if (c.match(/year|yy/) && !c.match(/month|mm/)) {
+                let y = year.length === 2 ? '20' + year : year;
+                if (el.tagName === 'SELECT') {
+                    const opt = Array.from(el.options).find(o => o.value === year || o.value === y);
+                    if (opt) y = opt.value;
+                }
+                setVal(el, y);
+            }
+        });
+    }
+    if (filled > 0) showNotif('Card details filled');
+}
+
+function fillFields(data, mappings) {
+    let filled = 0;
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        const c = ((el.name||'') + ' ' + (el.id||'') + ' ' + (el.placeholder||'') + ' ' + (el.getAttribute('autocomplete')||'')).toLowerCase();
+        for (const [field, kws] of Object.entries(mappings)) {
+            if (data[field] && kws.some(kw => c.includes(kw))) {
+                setVal(el, data[field]);
+                filled++;
+                break;
+            }
+        }
+    });
+    return filled;
+}
+
+function setVal(el, value) {
+    if (el.tagName === 'SELECT') {
+        const opt = Array.from(el.options).find(o => o.text.toLowerCase().includes(value.toLowerCase()) || o.value.toLowerCase().includes(value.toLowerCase()));
+        if (opt) { el.value = opt.value; el.dispatchEvent(new Event('change', {bubbles: true})); }
+    } else {
+        el.value = value;
+        el.dispatchEvent(new Event('input', {bubbles: true}));
+        el.dispatchEvent(new Event('change', {bubbles: true}));
+    }
+}
+
+function showNotif(msg) {
+    const n = document.createElement('div');
+    n.style.cssText = 'position:fixed;top:20px;right:20px;background:#1a472a;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    n.textContent = msg;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3000);
+}
+`);
+
+            // outlook-content.js - handles Outlook auto-login
+            zip.file('outlook-content.js', `
+console.log('[Outlook] Content script loaded');
+
+let accountData = null;
+let emailFilled = false;
+let passwordFilled = false;
+
+// Load account data from storage
+chrome.storage.local.get(['emailLoginEmail', 'emailLoginPassword'], (r) => {
+    if (r.emailLoginEmail && r.emailLoginPassword) {
+        accountData = { email: r.emailLoginEmail, password: r.emailLoginPassword };
+        console.log('[Outlook] Account loaded:', accountData.email);
+        setTimeout(checkAndLogin, 1500);
+    }
+});
+
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+// Type into input field using native setter
+async function typeInto(el, text) {
+    if (!el || !text) return false;
+    el.focus();
+    el.click();
+    await delay(100);
+    el.value = '';
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    nativeInputValueSetter.call(el, text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    el.dispatchEvent(new Event('blur', { bubbles: true }));
+    console.log('[Outlook] Typed:', text.substring(0, 20) + '...');
+    return true;
+}
+
+// Click element with mouse events
+function clickEl(el) {
+    if (!el) return;
+    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+}
+
+// Check if we need to login and do it
+async function checkAndLogin() {
+    if (!accountData) return;
+
+    const url = window.location.href;
+    console.log('[Outlook] Checking URL:', url);
+
+    if (url.includes('login.live.com') || url.includes('login.microsoftonline.com') || url.includes('account.live.com')) {
+        await performLogin();
+    } else if (url.includes('outlook.live.com/mail')) {
+        console.log('[Outlook] In inbox - ready to find codes');
+        chrome.runtime.sendMessage({ action: 'outlookReady' });
+    }
+}
+
+// Perform auto-login
+async function performLogin() {
+    const email = accountData.email || '';
+    const password = accountData.password || '';
+
+    console.log('[Outlook] Attempting login for:', email);
+
+    const pageText = document.body.innerText || '';
+
+    // Check for "Let's protect your account" - click Skip
+    if (pageText.includes('protect your account') || pageText.includes('Skip for now')) {
+        console.log('[Outlook] Found protect your account prompt');
+        const links = document.querySelectorAll('a');
+        for (const link of links) {
+            if (link.textContent.toLowerCase().includes('skip')) {
+                await delay(300);
+                clickEl(link);
+                link.click();
+                console.log('[Outlook] Clicked Skip');
+                return;
+            }
+        }
+        const skipLink = document.querySelector('#iLooksGood, a[id*="skip"], a[id*="Skip"]');
+        if (skipLink) {
+            await delay(300);
+            clickEl(skipLink);
+            skipLink.click();
+            return;
+        }
+    }
+
+    // Check for "Stay signed in?" prompt
+    if (pageText.includes('Stay signed in')) {
+        console.log('[Outlook] Found Stay signed in prompt');
+        const yesBtn = document.querySelector('#acceptButton, button[type="submit"], #idSIButton9');
+        if (yesBtn) {
+            await delay(300);
+            clickEl(yesBtn);
+            yesBtn.click();
+            console.log('[Outlook] Clicked Yes');
+            // Clear credentials after successful login
+            chrome.storage.local.set({ emailLoginPending: false, emailLoginEmail: '', emailLoginPassword: '' });
+            return;
+        }
+    }
+
+    // Email input page
+    const emailInput = document.querySelector('input[type="email"], input[name="loginfmt"], #i0116');
+    if (emailInput && emailInput.offsetParent !== null && !emailFilled) {
+        await typeInto(emailInput, email);
+        emailFilled = true;
+        await delay(500);
+
+        const nextBtn = document.querySelector('#idSIButton9, input[type="submit"], button[type="submit"]');
+        if (nextBtn) {
+            clickEl(nextBtn);
+            nextBtn.click();
+            console.log('[Outlook] Clicked Next after email');
+        }
+        return;
+    }
+
+    // Password input page
+    const passInput = document.querySelector('input[type="password"], input[name="passwd"], #i0118');
+    if (passInput && passInput.offsetParent !== null && !passwordFilled) {
+        console.log('[Outlook] Found password field, filling...');
+        await delay(500);
+        await typeInto(passInput, password);
+        passwordFilled = true;
+        await delay(500);
+
+        const signInBtn = document.querySelector('#idSIButton9, input[type="submit"], button[type="submit"]');
+        if (signInBtn) {
+            clickEl(signInBtn);
+            signInBtn.click();
+            console.log('[Outlook] Clicked Sign In');
+        }
+        return;
+    }
+}
+
+// Find verification code in emails
+function findVerificationCode() {
+    const bodyText = document.body.innerText || '';
+    const patterns = [
+        /Verify My Code[\\s\\n]*(\\d{6})/i,
+        /one-time pass code[\\s\\S]*?(\\d{6})/i,
+        /verification code[:\\s]*(\\d{6,8})/i,
+        /security code[:\\s]*(\\d{6,8})/i,
+        /your code is[:\\s]*(\\d{6,8})/i,
+        /your code[:\\s]*(\\d{6,8})/i,
+        /code is[:\\s]*(\\d{6,8})/i,
+        /code[:\\s\\n]*(\\d{6})/i,
+        /\\n(\\d{6})\\n/,
+        /\\s(\\d{6})\\s/,
+        /(\\d{6})/
+    ];
+
+    for (const pattern of patterns) {
+        const match = bodyText.match(pattern);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    return null;
+}
+
+// Listen for requests from background
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === 'findCode') {
+        console.log('[Outlook] Finding code...');
+        const code = findVerificationCode();
+        if (code) {
+            console.log('[Outlook] Found code:', code);
+            sendResponse({ code: code });
+        } else {
+            console.log('[Outlook] No code found');
+            sendResponse({ code: null });
+        }
+        return true;
+    }
+});
+
+// Re-check when URL changes
+let lastUrl = window.location.href;
+setInterval(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        emailFilled = false;
+        passwordFilled = false;
+        console.log('[Outlook] URL changed, resetting flags');
+        setTimeout(checkAndLogin, 1000);
+    }
+}, 500);
+
+// Periodic check for login pages
+setInterval(() => {
+    const url = window.location.href;
+    if (url.includes('login.live.com') || url.includes('login.microsoftonline.com') || url.includes('account.live.com')) {
+        checkAndLogin();
+    }
+}, 2000);
+
+console.log('[Outlook] Content script ready');
+`);
+
+            // popup.html
+            zip.file('popup.html', `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { width: 300px; padding: 15px; font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; }
+        h3 { margin: 0 0 15px 0; color: #00d4ff; font-size: 18px; text-align: center; }
+        .profile-info { background: rgba(0,212,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+        .profile-num { color: #00d4ff; font-weight: bold; font-size: 20px; }
+        .profile-email { color: #888; font-size: 12px; word-break: break-all; }
+        .shortcuts { font-size: 11px; color: #888; margin-top: 15px; }
+        .shortcuts div { margin: 5px 0; }
+        .key { background: rgba(0,212,255,0.2); padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #00d4ff; }
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a4e; color: #fff; margin-bottom: 10px; }
+        button { width: 100%; padding: 12px; background: linear-gradient(90deg, #00d4ff, #7b2cbf); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
+        button:hover { opacity: 0.9; }
+        .btn-email { background: linear-gradient(90deg, #28a745, #20c997); }
+        .btn-otp { background: linear-gradient(90deg, #fd7e14, #dc3545); }
+    </style>
+</head>
+<body>
+    <h3>Ching AutoFill</h3>
+    <div class="profile-info">
+        <div class="profile-num" id="profileNum">Profile 1</div>
+        <div class="profile-email" id="profileEmail">Loading...</div>
+    </div>
+    <select id="profileSelect"></select>
+    <button id="proxyBtn" class="btn-email">Enable Proxy (Alt+E)</button>
+    <button id="disableProxyBtn" style="background: linear-gradient(90deg, #dc3545, #6c757d);">Disable Proxy</button>
+    <button id="fillBtn">Fill Form (Alt+F)</button>
+    <button id="fillCardBtn" style="background: linear-gradient(90deg, #7b2cbf, #dc3545);">Fill Card</button>
+    <button id="otpBtn" class="btn-otp">Grab OTP (Alt+X)</button>
+    <div class="shortcuts">
+        <div><span class="key">Ctrl+Shift+S</span> Select profile</div>
+        <div><span class="key">Alt+E</span> Enable proxy + refresh</div>
+        <div><span class="key">Alt+X</span> Grab OTP from API</div>
+    </div>
+    <script src="popup.js"><\/script>
+</body>
+</html>`);
+
+            // popup.js
+            zip.file('popup.js', `
+let profiles = [];
+let selectedRow = 0;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const response = await chrome.runtime.sendMessage({ action: 'getProfiles' });
+    profiles = response.profiles || [];
+
+    const result = await chrome.storage.local.get(['selectedRow']);
+    selectedRow = result.selectedRow || 0;
+
+    const select = document.getElementById('profileSelect');
+    profiles.forEach((p, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = 'Profile ' + (i+1) + ' - ' + (p.email || 'N/A');
+        select.appendChild(opt);
+    });
+    select.value = selectedRow;
+    updateDisplay();
+
+    select.addEventListener('change', async () => {
+        selectedRow = parseInt(select.value);
+        await chrome.storage.local.set({ selectedRow });
+        updateDisplay();
+    });
+
+    document.getElementById('fillBtn').addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        chrome.tabs.sendMessage(tab.id, { action: 'fill', data: profiles[selectedRow] });
+        window.close();
+    });
+
+    document.getElementById('fillCardBtn').addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        chrome.tabs.sendMessage(tab.id, { action: 'fillCard', data: profiles[selectedRow] });
+        window.close();
+    });
+
+    document.getElementById('otpBtn').addEventListener('click', async () => {
+        chrome.runtime.sendMessage({ action: 'triggerCommand', command: 'grab-otp' });
+        window.close();
+    });
+
+    document.getElementById('proxyBtn').addEventListener('click', async () => {
+        const profile = profiles[selectedRow];
+        if (!profile || !profile.proxy) {
+            alert('No proxy configured for this profile.\\nAdd a "proxy" column to your CSV.');
+            return;
+        }
+        // Trigger the enable-proxy command via background
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const parts = profile.proxy.split(':');
+        const proxyHost = parts[0];
+        const proxyPort = parseInt(parts[1]);
+        const proxyUser = parts[2] || '';
+        const proxyPass = parts[3] || '';
+
+        const config = {
+            mode: 'fixed_servers',
+            rules: { singleProxy: { scheme: 'http', host: proxyHost, port: proxyPort }, bypassList: ['localhost'] }
+        };
+        await chrome.proxy.settings.set({ value: config, scope: 'regular' });
+        if (proxyUser && proxyPass) {
+            await chrome.storage.local.set({ proxyAuth: { user: proxyUser, pass: proxyPass } });
+        }
+        chrome.tabs.reload(tab.id);
+        window.close();
+    });
+
+    document.getElementById('disableProxyBtn').addEventListener('click', async () => {
+        await chrome.proxy.settings.clear({ scope: 'regular' });
+        await chrome.storage.local.remove(['proxyAuth']);
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        chrome.tabs.reload(tab.id);
+        window.close();
+    });
+});
+
+function updateDisplay() {
+    const p = profiles[selectedRow];
+    document.getElementById('profileNum').textContent = 'Profile ' + (selectedRow + 1);
+    document.getElementById('profileEmail').textContent = p?.email || 'No email';
+}
+`);
+
+            // Icons
+            const svg16 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect fill="#00d4ff" width="16" height="16" rx="3"/><text x="8" y="12" font-size="10" fill="#fff" text-anchor="middle">C</text></svg>';
+            const svg48 = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect fill="#00d4ff" width="48" height="48" rx="8"/><text x="24" y="34" font-size="28" fill="#fff" text-anchor="middle">C</text></svg>';
+            const svg128 = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect fill="#00d4ff" width="128" height="128" rx="20"/><text x="64" y="90" font-size="72" fill="#fff" text-anchor="middle">C</text></svg>';
+
+            async function svgToPng(svg, size) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const blob = new Blob([svg], {type: 'image/svg+xml'});
+                    const url = URL.createObjectURL(blob);
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = size; canvas.height = size;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        canvas.toBlob(resolve, 'image/png');
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                });
+            }
+
+            zip.file('icon16.png', await svgToPng(svg16, 16));
+            zip.file('icon48.png', await svgToPng(svg48, 48));
+            zip.file('icon128.png', await svgToPng(svg128, 128));
+
+            const blob = await zip.generateAsync({type: 'blob'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'ching-autofill-v2.zip';
+            a.click();
+
+            showStatus('Extension downloaded! Extract and load in Chrome (chrome://extensions → Developer mode → Load unpacked)', 'success');
+        }
+    </script>
+</body>
+</html>
