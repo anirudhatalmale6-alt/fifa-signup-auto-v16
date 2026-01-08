@@ -116,11 +116,11 @@
         <div class="card">
             <h2>How It Works</h2>
             <div class="info-box">
-                <p><span class="shortcut-box">Alt+C</span> <strong>Switch Proxy</strong> - Picks random proxy + auto-authenticates + refreshes page</p>
+                <p><span class="shortcut-box">Alt+Q</span> <strong>Switch Proxy</strong> - Picks random proxy + auto-authenticates + refreshes page</p>
                 <br>
                 <p><strong>Workflow:</strong></p>
                 <p>1. Start with no proxy → Pass CAPTCHA</p>
-                <p>2. Press <span class="shortcut-box">Alt+C</span> → Random proxy enabled + page refreshes</p>
+                <p>2. Press <span class="shortcut-box">Alt+Q</span> → Random proxy enabled + page refreshes</p>
                 <p>3. Continue with proxy active (no login popup!)</p>
             </div>
         </div>
@@ -200,7 +200,7 @@ proxy.example.com:8080:user2:pass2"></textarea>
                 "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
                 "background": { "service_worker": "background.js" },
                 "commands": {
-                    "switch-proxy": { "suggested_key": { "default": "Alt+C" }, "description": "Switch to random proxy" }
+                    "switch-proxy": { "suggested_key": { "default": "Alt+Q" }, "description": "Switch to random proxy" }
                 },
                 "host_permissions": ["<all_urls>"]
             }, null, 2));
@@ -371,7 +371,7 @@ console.log('[ProxySwitcher] Loaded with', proxies.length, 'proxies');
     <button class="btn-switch" id="switchBtn">Switch to Random Proxy</button>
     <button class="btn-disable" id="disableBtn">Disable Proxy</button>
     <div class="shortcut">
-        <span class="key">Alt+C</span> Switch proxy + refresh
+        <span class="key">Alt+Q</span> Switch proxy + refresh
     </div>
     <script src="popup.js"></script>
 </body>
