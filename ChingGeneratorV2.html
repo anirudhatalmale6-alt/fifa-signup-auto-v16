@@ -142,7 +142,7 @@
             <h2>Features</h2>
             <ul class="feature-list">
                 <li><span class="shortcut-box">Ctrl+Shift+S</span> <strong>Select Profile</strong> - Choose profile number</li>
-                <li><span class="shortcut-box">Alt+E</span> <strong>Enable Proxy</strong> - Switch to profile's proxy + refresh page</li>
+                <li><span class="shortcut-box">Alt+Shift+1</span> <strong>Enable Proxy</strong> - Switch to profile's proxy + refresh page</li>
                 <li><span class="shortcut-box">Alt+X</span> <strong>Grab OTP</strong> - Fetches verification code from API and fills it</li>
                 <li><span class="shortcut-box">Alt+F</span> <strong>Fill Form</strong> - Autofills current page with profile data</li>
                 <li><span class="shortcut-box">Alt+C</span> <strong>Fill Card</strong> - Fills payment/card details</li>
@@ -322,7 +322,7 @@
                 ],
                 "commands": {
                     "select-profile": { "suggested_key": { "default": "Ctrl+Shift+S" }, "description": "Select profile" },
-                    "enable-proxy": { "suggested_key": { "default": "Alt+E" }, "description": "Enable proxy and refresh" },
+                    "enable-proxy": { "suggested_key": { "default": "Alt+Shift+1" }, "description": "Enable proxy and refresh" },
                     "grab-otp": { "suggested_key": { "default": "Alt+X" }, "description": "Grab OTP from API" },
                     "fill-form": { "suggested_key": { "default": "Alt+F" }, "description": "Fill form" }
                 },
@@ -1184,14 +1184,14 @@ console.log('[Outlook] Content script ready');
         <div class="profile-email" id="profileEmail">Loading...</div>
     </div>
     <select id="profileSelect"></select>
-    <button id="proxyBtn" class="btn-email">Enable Proxy (Alt+E)</button>
+    <button id="proxyBtn" class="btn-email">Enable Proxy (Alt+Shift+1)</button>
     <button id="disableProxyBtn" style="background: linear-gradient(90deg, #dc3545, #6c757d);">Disable Proxy</button>
     <button id="fillBtn">Fill Form (Alt+F)</button>
     <button id="fillCardBtn" style="background: linear-gradient(90deg, #7b2cbf, #dc3545);">Fill Card</button>
     <button id="otpBtn" class="btn-otp">Grab OTP (Alt+X)</button>
     <div class="shortcuts">
         <div><span class="key">Ctrl+Shift+S</span> Select profile</div>
-        <div><span class="key">Alt+E</span> Enable proxy + refresh</div>
+        <div><span class="key">Alt+Shift+1</span> Enable proxy + refresh</div>
         <div><span class="key">Alt+X</span> Grab OTP from API</div>
     </div>
     <script src="popup.js"><\/script>
