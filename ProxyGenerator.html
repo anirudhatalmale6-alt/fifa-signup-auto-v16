@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Extension Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 { margin-bottom: 15px; color: #ff6b6b; font-size: 1.2rem; }
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #fff;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+        textarea:focus { outline: none; border-color: #ff6b6b; }
+        textarea::placeholder { color: #555; }
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,107,107,0.3);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: rgba(40,167,69,0.2);
+            border: 1px solid #28a745;
+            color: #28a745;
+        }
+        .status.error {
+            display: block;
+            background: rgba(220,53,69,0.2);
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+        .info-box {
+            background: rgba(255,107,107,0.1);
+            border: 1px solid rgba(255,107,107,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        .shortcut-box {
+            display: inline-block;
+            background: rgba(255,107,107,0.3);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        .proxy-count { color: #feca57; font-weight: bold; font-size: 1.3rem; margin-top: 10px; }
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .feature { margin: 8px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proxy Extension Generator</h1>
+        <p class="subtitle">Generate extension with hardcoded proxies - just press Alt+Q!</p>
+
+        <div class="card">
+            <h2>How It Works</h2>
+            <div class="info-box">
+                <div class="feature"><span class="shortcut-box">Alt+Q</span> = Switch to random proxy + auto-auth + refresh</div>
+                <br>
+                <p><strong>No popup needed!</strong> Proxies are built into the extension.</p>
+                <p>Just press Alt+Q anytime to switch proxy instantly.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Paste Your Proxy List</h2>
+            <p style="color:#888; margin-bottom:10px;">Format: <code>host:port:username:password</code> (one per line)</p>
+            <textarea id="proxyList" placeholder="b2b-s15.liveproxies.io:7383:LV22356609-lv_us-26890:BWT3m8egQvp4MM8l9in5
+proxy2.example.com:8080:user2:pass2
+proxy3.example.com:12321:user3:pass3"></textarea>
+            <div class="proxy-count">Proxies: <span id="proxyCount">0</span></div>
+        </div>
+
+        <div class="card">
+            <h2>Generate Extension</h2>
+            <button class="btn btn-primary" onclick="generateExtension()">
+                Generate Proxy Extension (.zip)
+            </button>
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const proxyListEl = document.getElementById('proxyList');
+        const proxyCountEl = document.getElementById('proxyCount');
+
+        proxyListEl.addEventListener('input', updateCount);
+
+        function updateCount() {
+            const lines = proxyListEl.value.trim().split('\n').filter(l => l.trim());
+            proxyCountEl.textContent = lines.length;
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = 'status ' + type;
+        }
+
+        async function generateExtension() {
+            const lines = proxyListEl.value.trim().split('\n').filter(l => l.trim());
+            if (lines.length === 0) {
+                showStatus('Please paste at least one proxy!', 'error');
+                return;
+            }
+
+            showStatus('Generating extension...', 'success');
+
+            // Store proxy list as JSON string
+            const proxyListJSON = JSON.stringify(lines);
+
+            const zip = new JSZip();
+
+            // manifest.json - minimal, just Alt+Q shortcut
+            zip.file('manifest.json', JSON.stringify({
+                "manifest_version": 3,
+                "name": "Proxy Switcher",
+                "version": "1.0.0",
+                "description": "Alt+Q to switch random proxy",
+                "permissions": ["proxy", "storage", "tabs", "scripting", "webRequest", "webRequestAuthProvider"],
+                "background": { "service_worker": "background.js" },
+                "commands": {
+                    "switch-proxy": {
+                        "suggested_key": { "default": "Alt+Q" },
+                        "description": "Switch to random proxy"
+                    }
+                },
+                "host_permissions": ["<all_urls>"]
+            }, null, 2));
+
+            // background.js - all the logic
+            zip.file('background.js', `
+// Hardcoded proxy list
+const PROXIES = ${proxyListJSON};
+
+// Current proxy auth for webRequest
+let currentProxyAuth = null;
+
+// Listen for Alt+Q
+chrome.commands.onCommand.addListener(async (command) => {
+    if (command === 'switch-proxy') {
+        await switchToRandomProxy();
+    }
+});
+
+// Switch to random proxy
+async function switchToRandomProxy() {
+    try {
+        if (PROXIES.length === 0) {
+            console.log('[Proxy] No proxies configured');
+            return;
+        }
+
+        // Pick random proxy
+        const randomIndex = Math.floor(Math.random() * PROXIES.length);
+        const proxyString = PROXIES[randomIndex];
+        const parts = proxyString.trim().split(':');
+
+        if (parts.length < 2) {
+            console.error('[Proxy] Invalid format:', proxyString);
+            return;
+        }
+
+        const host = parts[0];
+        const port = parseInt(parts[1]);
+        const username = parts[2] || null;
+        const password = parts[3] || null;
+
+        console.log('[Proxy] Switching to:', host, port);
+
+        // Store auth credentials FIRST
+        if (username && password) {
+            currentProxyAuth = { username, password };
+            console.log('[Proxy] Auth stored for:', username);
+        } else {
+            currentProxyAuth = null;
+        }
+
+        // Small delay to ensure auth is ready
+        await new Promise(r => setTimeout(r, 50));
+
+        // Set proxy
+        await new Promise((resolve, reject) => {
+            chrome.proxy.settings.set({
+                value: {
+                    mode: 'fixed_servers',
+                    rules: {
+                        singleProxy: {
+                            scheme: 'http',
+                            host: host,
+                            port: port
+                        }
+                    }
+                },
+                scope: 'regular'
+            }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        // Get active tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab) {
+            // Show notification
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (h, p, u) => {
+                    const n = document.createElement('div');
+                    n.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+                    n.innerHTML = '🔄 Proxy: ' + h + ':' + p + (u ? '<br><small style="font-weight:normal;">Auth: ' + u + '</small>' : '');
+                    document.body.appendChild(n);
+                    setTimeout(() => n.remove(), 2000);
+                },
+                args: [host, port, username]
+            });
+
+            // Refresh after delay
+            setTimeout(() => {
+                chrome.tabs.reload(tab.id);
+            }, 800);
+        }
+
+        console.log('[Proxy] ✅ Switched successfully');
+
+    } catch (error) {
+        console.error('[Proxy] Error:', error);
+    }
+}
+
+// Handle proxy authentication - BLOCKING mode for better compatibility
+chrome.webRequest.onAuthRequired.addListener(
+    function(details) {
+        if (details.isProxy && currentProxyAuth) {
+            console.log('[Proxy] Providing auth for:', currentProxyAuth.username);
+            return {
+                authCredentials: {
+                    username: currentProxyAuth.username,
+                    password: currentProxyAuth.password
+                }
+            };
+        }
+        return {};
+    },
+    { urls: ['<all_urls>'] },
+    ['blocking']
+);
+
+// Log on startup
+console.log('[Proxy] Extension loaded with', PROXIES.length, 'proxies. Press Alt+Q to switch!');
+`);
+
+            // Generate and download
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'proxy-switcher.zip';
+            a.click();
+
+            showStatus('Extension downloaded! Extract and load in Chrome (Extensions → Developer mode → Load unpacked). Then just press Alt+Q anytime!', 'success');
+        }
+    </script>
+</body>
+</html>
