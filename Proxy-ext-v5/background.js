@@ -148,27 +148,25 @@ function FindProxyForURL(url, host) {
 })();
 
 // Listen for proxy authentication requests and inject credentials
-// webRequestAuthProvider permission enables blocking mode for onAuthRequired in MV3
+// Only listen for proxy auth requests, not all URLs - this prevents conflicts with other extensions
 chrome.webRequest.onAuthRequired.addListener(
-  function(details) {
-    // Check if this is a proxy authentication request
-    if (details.isProxy && currentProxyAuth) {
-      const { username, password } = currentProxyAuth;
-      if (username && password) {
-        // Return credentials directly - Chrome handles the response
-        return {
-          authCredentials: {
-            username: username,
-            password: password
-          }
-        };
-      }
+  function(details, callback) {
+    // Only handle proxy authentication, ignore everything else
+    if (details.isProxy && currentProxyAuth && currentProxyAuth.username && currentProxyAuth.password) {
+      console.log('[Proxy] Auth required for proxy, providing credentials');
+      callback({
+        authCredentials: {
+          username: currentProxyAuth.username,
+          password: currentProxyAuth.password
+        }
+      });
+    } else {
+      // Let Chrome handle it normally - don't block other extensions
+      callback({});
     }
-    // Return empty object to let Chrome handle it normally
-    return {};
   },
   { urls: ["<all_urls>"] },
-  ["blocking"] // webRequestAuthProvider enables blocking mode for auth
+  ["asyncBlocking"] // Use asyncBlocking instead of blocking to reduce conflicts
 );
 
 // Helper function to wrap Chrome proxy API callbacks in promises
