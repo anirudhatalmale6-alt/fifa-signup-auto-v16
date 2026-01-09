@@ -11,15 +11,35 @@ const DEFAULT_STATE = {
 // Store current proxy credentials for webRequest authentication
 let currentProxyAuth = null;
 
-// Load proxy config from proxy.json file
+// Load proxy config from proxy.txt file (format: host:port:username:password)
 async function loadProxyConfig() {
   try {
-    const response = await fetch(chrome.runtime.getURL('proxy.json'));
-    const config = await response.json();
+    const response = await fetch(chrome.runtime.getURL('proxy.txt'));
+    const text = await response.text();
+    const line = text.trim();
+
+    if (!line || line.startsWith('#')) {
+      console.log('[Proxy] No proxy configured in proxy.txt');
+      return null;
+    }
+
+    const parts = line.split(':');
+    if (parts.length < 2) {
+      console.log('[Proxy] Invalid proxy format in proxy.txt');
+      return null;
+    }
+
+    const config = {
+      host: parts[0],
+      port: parts[1],
+      username: parts[2] || '',
+      password: parts[3] || ''
+    };
+
     console.log('[Proxy] Loaded config:', config.host + ':' + config.port);
     return config;
   } catch (error) {
-    console.error('[Proxy] Error loading proxy.json:', error);
+    console.error('[Proxy] Error loading proxy.txt:', error);
     return null;
   }
 }
