@@ -6,10 +6,7 @@
   "permissions": [
     "proxy",
     "storage",
-    "tabs",
-    "scripting",
-    "webRequest",
-    "webRequestAuthProvider"
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"

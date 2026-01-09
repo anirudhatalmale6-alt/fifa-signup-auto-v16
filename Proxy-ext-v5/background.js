@@ -60,29 +60,42 @@ async function loadProxyConfig() {
   return parseProxyString(randomProxy);
 }
 
-// Set custom proxy from config
+// Set custom proxy from config using PAC script (no webRequest needed)
 async function setCustomProxyFromConfig(config) {
   if (!config || !config.host || !config.port || config.host === 'your-proxy-host.com') {
     console.log('[Proxy] No valid config, using DIRECT');
     return false;
   }
 
-  // Store credentials for auth
+  // Build proxy string with auth if provided
+  let proxyString;
+  if (config.username && config.password) {
+    // Use PAC script to handle authenticated proxy
+    proxyString = `PROXY ${config.host}:${config.port}`;
+  } else {
+    proxyString = `PROXY ${config.host}:${config.port}`;
+  }
+
+  // Store config for later use
   currentProxyAuth = {
     username: config.username || '',
-    password: config.password || ''
+    password: config.password || '',
+    host: config.host,
+    port: config.port
   };
 
-  // Use fixed_servers mode for custom proxy
+  // Use PAC script mode - simpler and less conflicting
+  const pacScript = `
+function FindProxyForURL(url, host) {
+  return "${proxyString}";
+}
+  `.trim();
+
   await chrome.proxy.settings.set({
     value: {
-      mode: 'fixed_servers',
-      rules: {
-        singleProxy: {
-          scheme: 'http',
-          host: config.host,
-          port: parseInt(config.port)
-        }
+      mode: 'pac_script',
+      pacScript: {
+        data: pacScript
       }
     },
     scope: 'regular'
@@ -147,27 +160,8 @@ function FindProxyForURL(url, host) {
   }
 })();
 
-// Listen for proxy authentication requests and inject credentials
-// Only listen for proxy auth requests, not all URLs - this prevents conflicts with other extensions
-chrome.webRequest.onAuthRequired.addListener(
-  function(details, callback) {
-    // Only handle proxy authentication, ignore everything else
-    if (details.isProxy && currentProxyAuth && currentProxyAuth.username && currentProxyAuth.password) {
-      console.log('[Proxy] Auth required for proxy, providing credentials');
-      callback({
-        authCredentials: {
-          username: currentProxyAuth.username,
-          password: currentProxyAuth.password
-        }
-      });
-    } else {
-      // Let Chrome handle it normally - don't block other extensions
-      callback({});
-    }
-  },
-  { urls: ["<all_urls>"] },
-  ["asyncBlocking"] // Use asyncBlocking instead of blocking to reduce conflicts
-);
+// NOTE: Removed webRequest listener to avoid conflicts with other extensions
+// Chrome will prompt for proxy auth when needed - user enters credentials once
 
 // Helper function to wrap Chrome proxy API callbacks in promises
 function setProxySettings(config) {
