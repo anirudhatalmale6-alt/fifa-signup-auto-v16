@@ -1,0 +1,13 @@
+{
+"manifest_version": 3,
+"name": "Window Size Lock",
+"version": "1.0.0",
+"description": "Sets window size to 200x500 and zoom to 35%",
+"permissions": [
+"windows",
+"tabs"
+],
+"background": {
+"service_worker": "background.js"
+}
+}

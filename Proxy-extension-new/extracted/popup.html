@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proxy Toggle</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Proxy Control</h1>
+      <div class="status-indicator" id="statusIndicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Loading...</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="mode-buttons">
+        <button id="directBtn" class="mode-btn">
+          <span class="btn-icon">🚫</span>
+          <span class="btn-text">Direct Connection</span>
+        </button>
+        
+        <button id="proxyBtn" class="mode-btn">
+          <span class="btn-icon">🔒</span>
+          <span class="btn-text">Multilogin Proxy</span>
+        </button>
+      </div>
+
+      <div class="divider">
+        <span>OR</span>
+      </div>
+
+      <div class="custom-proxy-section">
+        <label for="proxyInput" class="input-label">Custom HTTP Proxy</label>
+        <input 
+          type="text" 
+          id="proxyInput" 
+          class="proxy-input" 
+          placeholder="host:port:user:pass"
+          autocomplete="off"
+        >
+        <button id="customProxyBtn" class="mode-btn custom-btn">
+          <span class="btn-icon">🔧</span>
+          <span class="btn-text">Use Custom Proxy</span>
+        </button>
+        <div class="help-text">
+          Format: <code>host:port:user:pass</code><br>
+          Example: <code>proxy.example.com:8080:username:password</code><br>
+          <strong>Note:</strong> For authenticated proxies, Chrome will prompt for credentials. Enter username/password when prompted.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="info-text">
+        Works with Multilogin 6 profiles
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

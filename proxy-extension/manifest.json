@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Proxy Switcher",
+  "version": "1.0.0",
+  "description": "Alt+Q to switch random proxy",
+  "permissions": [
+    "proxy",
+    "storage",
+    "tabs",
+    "scripting",
+    "webRequest",
+    "webRequestAuthProvider"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "switch-proxy": {
+      "suggested_key": {
+        "default": "Alt+Q"
+      },
+      "description": "Switch to random proxy"
+    }
+  },
+  "host_permissions": ["<all_urls>"]
+}

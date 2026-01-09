@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Proxy Switcher Pro",
+  "version": "2.0.0",
+  "description": "Random proxy switching with auto-authentication. Press Alt+Q to switch to random proxy.",
+  "permissions": [
+    "proxy",
+    "storage",
+    "tabs",
+    "scripting",
+    "webRequest",
+    "webRequestAuthProvider"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "switch-random-proxy": {
+      "suggested_key": {
+        "default": "Alt+Q"
+      },
+      "description": "Switch to random proxy from list"
+    }
+  }
+}

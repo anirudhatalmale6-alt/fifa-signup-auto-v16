@@ -1,0 +1,80 @@
+Hello there,
+
+
+
+If you prefer, I can start by building a small proof-of-concept first, just so you can evaluate the code quality and reliability before committing I always encourage clients to test my work instead of relying on claims.
+I read through your requirements for the Multilogin 6 Chrome extension, and this is exactly the kind of browser automation and extension-level proxy control I’ve been building for years. I’ve worked extensively with Chrome extension APIs, networking/proxy APIs, profile automation, and integrations with tools like Multilogin, Kameleo, GoLogin, and Oxylabs, so I have a clear picture of how to implement your functionality without guesswork.
+
+
+
+💡 Why I’m confident I can deliver exactly what you need
+
+
+
+Deep experience with Chrome/Manifest V3 extensions
+I’ve built extensions that manage proxies, modify network settings, communicate with external apps, and toggle features instantly.
+Strong understanding of Multilogin 6
+I’ve integrated extensions with Multilogin before — launching profiles, detecting their environment, and syncing proxy settings with the browser instance.
+
+
+
+One-click Proxy Toggle
+I can build a clean UI button (or persistent icon state) to instantly enable/disable the proxy via the Chrome proxy API.
+
+
+
+Default “Proxy ON” behavior
+When a Multilogin profile launches, the extension can automatically load with the proxy enabled, ensuring a consistent default state.
+
+
+
+📦 What you will receive
+
+
+
+Full Chrome extension (MV3) built for Multilogin 6
+Smooth one-click proxy toggle from the toolbar
+Default proxy-enabled environment when profiles launch
+Clean code, comments, and documentation
+Optional communication with your backend or local controller if needed
+A quick demo so you can test everything immediately
+Everything will be built with stability and simplicity in mind, so the extension works flawlessly across all Multilogin profiles.
+
+
+
+🤝 What it's like working with me
+
+
+
+Clients appreciate that I:
+Communicate clearly
+Deliver production-ready, maintainable code
+Solve problems proactively
+And never disappear mid-project
+If you’d like, I can create a small test version right away so you can evaluate the workflow.
+Looking forward to building this for you.
+Best regards,
+Ali
+
+View details
+Andrew Werner
+10:15 PM
+So the problem I’m trying to solve is I am purchasing an item that for whatever reason on certain profiles/proxies it wants to checkout using a direct connection instead of the profile proxy. So I want an extension that can easily switch to direct connection, and then after that page is loaded back to proxy. Does that feel like something you can do?
+
+It seems pretty simple. But I need someone a little familiar with ml6 to be able to navigate those unique instances for mimic instead of chrome
+
+Muhammad Ali Sabir
+11:10 PM
+Yes, that’s absolutely doable.
+What you’re describing is essentially a controlled, temporary override of the browser’s proxy settings during a specific part of the checkout flow. With a Chrome extension using chrome.proxy APIs, I can programmatically switch the profile from its default proxy to a direct connection, wait for the page to complete loading or reach a specific condition, and then automatically revert the browser back to the original proxy settings.
+The toggle can be both manual (one-click button) and automatic (triggered when certain URLs or conditions appear) depending on what you prefer. The extension will detect the state, safely switch the routing, and maintain reliability even if the page reloads or redirects.
+
+
+
+So yes this aligns perfectly with what I can build, and it’s technically straightforward with a properly structured MV3 extension.
+
+Andrew Werner
+11:12 PM
+that would be great. I think if we could have it be manual that would be best, because 1) i don't remember the exact URL and won't know until tomorrow and 2) there's instances where the checkout processes fine while on proxy, and in those instances i'd prefer to just keep the default proxy settings and only use the extension when it's necessary. I need this thing before 9am New York time tomorrow. Is this something you can work on immediately?
+
+would it be possible to also allow a proxy switch? so like a "direct" option, and then also a paste a single line HTTP like host:port:user:pass proxy we could have the profile switch all traffic?

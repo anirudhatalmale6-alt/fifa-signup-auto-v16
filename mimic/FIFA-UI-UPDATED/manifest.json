@@ -1,0 +1,23 @@
+{
+"manifest_version": 3,
+"name": "FIFA UI Automation",
+"version": "4.0",
+"description": "Ctrl+Shift+F = Tickets, Alt+C = Card automation",
+"permissions": ["activeTab", "scripting", "tabs"],
+"host_permissions": ["https://*.fifa.com/*", "https://*.tickets.fifa.com/*"],
+"action": {"default_title": "Run Tickets (Ctrl+Shift+Alt)"},
+"background": {"service_worker": "background.js"},
+"content_scripts": [
+  {
+    "matches": ["https://*.tickets.fifa.com/*", "https://*.fifa.com/*"],
+    "js": ["automation-card.js"],
+    "run_at": "document_idle"
+  }
+],
+"commands": {
+"run-automation": {
+"suggested_key": {"default": "Ctrl+Shift+F"},
+"description": "Run Ticket Automation"
+}
+}
+}

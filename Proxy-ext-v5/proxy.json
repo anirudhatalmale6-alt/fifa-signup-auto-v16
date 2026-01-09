@@ -1,0 +1,6 @@
+{
+  "host": "your-proxy-host.com",
+  "port": "8080",
+  "username": "your-username",
+  "password": "your-password"
+}

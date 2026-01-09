@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bulk Fake Data Generator</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #fff; padding: 20px; }
+    h1 { color: #0078d4; }
+    .controls { margin: 20px 0; }
+    button { background: #0078d4; color: #fff; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 10px; }
+    button:hover { background: #106ebe; }
+    .copy-btn { background: #107c10; }
+    .download-btn { background: #5c2d91; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+    th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+    th { background: #0078d4; }
+    tr:nth-child(even) { background: #16213e; }
+    tr:nth-child(odd) { background: #1a1a2e; }
+    #count { width: 80px; padding: 8px; background: #16213e; border: 1px solid #333; color: #fff; border-radius: 4px; }
+    .stats { color: #aaa; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Bulk Fake Data Generator</h1>
+
+  <div class="controls">
+    <label>Count: <input type="number" id="count" value="100" min="1" max="1000"></label>
+    <button onclick="generate()">Generate</button>
+    <button class="copy-btn" onclick="copyCSV()">Copy CSV</button>
+    <button class="download-btn" onclick="downloadCSV()">Download CSV</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Email</th>
+        <th>Password</th>
+        <th>Full Name</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Gender</th>
+        <th>Birthday</th>
+        <th>Address</th>
+        <th>City</th>
+        <th>State</th>
+        <th>ZIP</th>
+        <th>Country</th>
+        <th>Phone</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+  </table>
+
+  <script>
+    const maleNames = ['James','John','Robert','Michael','David','William','Liam','Noah','Oliver','Benjamin','Lucas','Henry','Alexander','Sebastian','Daniel','Matthew','Jackson','Aiden','Ethan','Jacob','Logan','Mason','Samuel','Joseph','Christopher','Andrew','Thomas','Joshua','Ryan','Nicholas'];
+    const femaleNames = ['Emma','Olivia','Sophia','Isabella','Charlotte','Amelia','Mia','Harper','Evelyn','Abigail','Emily','Elizabeth','Sofia','Avery','Ella','Scarlett','Grace','Victoria','Riley','Aria','Lily','Aubrey','Zoey','Penelope','Chloe','Layla','Madison','Hannah','Sarah','Jessica'];
+
+    const lastNames = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez','Wilson','Anderson','Taylor','Thomas','Moore','Jackson','Martin','Lee','Thompson','White','Harris','Clark','Lewis','Robinson','Walker','Young','Allen','King','Wright','Scott','Green','Baker','Adams','Nelson','Hill','Campbell','Mitchell','Roberts','Carter','Phillips'];
+
+    const streets = ['Main St','Oak Ave','Maple Dr','Cedar Ln','Pine Rd','Elm St','Washington Blvd','Park Ave','Lake Dr','River Rd','Highland Ave','Forest Dr','Valley Rd','Sunset Blvd','Mountain View Dr','Meadow Ln','Spring St','Garden Way','College Ave','Church St'];
+
+    const cities = [
+      {city: 'New York', state: 'NY', zip: '100'},
+      {city: 'Los Angeles', state: 'CA', zip: '900'},
+      {city: 'Chicago', state: 'IL', zip: '606'},
+      {city: 'Houston', state: 'TX', zip: '770'},
+      {city: 'Phoenix', state: 'AZ', zip: '850'},
+      {city: 'Philadelphia', state: 'PA', zip: '191'},
+      {city: 'San Antonio', state: 'TX', zip: '782'},
+      {city: 'San Diego', state: 'CA', zip: '921'},
+      {city: 'Dallas', state: 'TX', zip: '752'},
+      {city: 'San Jose', state: 'CA', zip: '951'},
+      {city: 'Austin', state: 'TX', zip: '787'},
+      {city: 'Jacksonville', state: 'FL', zip: '322'},
+      {city: 'Fort Worth', state: 'TX', zip: '761'},
+      {city: 'Columbus', state: 'OH', zip: '432'},
+      {city: 'Charlotte', state: 'NC', zip: '282'},
+      {city: 'Seattle', state: 'WA', zip: '981'},
+      {city: 'Denver', state: 'CO', zip: '802'},
+      {city: 'Boston', state: 'MA', zip: '021'},
+      {city: 'Portland', state: 'OR', zip: '972'},
+      {city: 'Miami', state: 'FL', zip: '331'}
+    ];
+
+    let generatedData = [];
+
+    function generate() {
+      const count = parseInt(document.getElementById('count').value) || 100;
+      generatedData = [];
+
+      for (let i = 0; i < count; i++) {
+        const isMale = Math.random() > 0.5;
+        const gender = isMale ? 'Male' : 'Female';
+        const firstName = isMale
+          ? maleNames[Math.floor(Math.random() * maleNames.length)]
+          : femaleNames[Math.floor(Math.random() * femaleNames.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const timestamp = Date.now().toString().slice(-6);
+        const randomNum = Math.floor(Math.random() * 900000 + 100000);
+        const email = firstName.toLowerCase() + lastName.toLowerCase() + timestamp + randomNum;
+
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+        let password = '';
+        for (let j = 0; j < 12; j++) {
+          password += chars[Math.floor(Math.random() * chars.length)];
+        }
+
+        const streetNum = Math.floor(Math.random() * 9000 + 100);
+        const street = streets[Math.floor(Math.random() * streets.length)];
+        const address = streetNum + ' ' + street;
+
+        const cityData = cities[Math.floor(Math.random() * cities.length)];
+        const zip = cityData.zip + Math.floor(Math.random() * 90 + 10);
+
+        const phone = '(' + (Math.floor(Math.random() * 800) + 200) + ') ' +
+                      (Math.floor(Math.random() * 900) + 100) + '-' +
+                      (Math.floor(Math.random() * 9000) + 1000);
+
+        generatedData.push({
+          email: email,
+          password: password,
+          fullName: firstName + ' ' + lastName,
+          firstName: firstName,
+          lastName: lastName,
+          gender: gender,
+          birthday: '04/12/1991',
+          address: address,
+          city: cityData.city,
+          state: cityData.state,
+          zip: zip,
+          country: 'United States',
+          phone: phone
+        });
+      }
+
+      renderTable();
+      document.getElementById('stats').textContent = 'Generated ' + count + ' records';
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      generatedData.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${row.email}@outlook.com</td>
+          <td>${row.password}</td>
+          <td>${row.fullName}</td>
+          <td>${row.firstName}</td>
+          <td>${row.lastName}</td>
+          <td>${row.gender}</td>
+          <td>${row.birthday}</td>
+          <td>${row.address}</td>
+          <td>${row.city}</td>
+          <td>${row.state}</td>
+          <td>${row.zip}</td>
+          <td>${row.country}</td>
+          <td>${row.phone}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getCSV() {
+      let csv = 'Email,Password,Full Name,First Name,Last Name,Gender,Birthday,Address,City,State,ZIP,Country,Phone\n';
+      generatedData.forEach(row => {
+        csv += `${row.email}@outlook.com,${row.password},${row.fullName},${row.firstName},${row.lastName},${row.gender},${row.birthday},"${row.address}",${row.city},${row.state},${row.zip},${row.country},${row.phone}\n`;
+      });
+      return csv;
+    }
+
+    function copyCSV() {
+      navigator.clipboard.writeText(getCSV()).then(() => {
+        alert('CSV copied to clipboard!');
+      });
+    }
+
+    function downloadCSV() {
+      const csv = getCSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'outlook_accounts_' + Date.now() + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Generate on load
+    generate();
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Multilogin 6 Proxy Toggle",
+  "version": "1.0.1",
+  "description": "Starts with NO proxy for CAPTCHA. Press Alt+Q to switch to Multilogin proxy.",
+  "permissions": [
+    "proxy",
+    "storage",
+    "tabs",
+    "scripting",
+    "webRequest",
+    "webRequestAuthProvider"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "switch-proxy": {
+      "suggested_key": {
+        "default": "Alt+Q"
+      },
+      "description": "Switch to Multilogin proxy"
+    }
+  }
+}
+

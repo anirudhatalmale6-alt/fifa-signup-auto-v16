@@ -1,0 +1,2 @@
+email,password,last_name,first_name,Full_name,Country,Address,City,Zip_code,Province,phone,card_number,cvc,card_expiry,gender,language
+example@email.com,password123,Doe,John,John Doe,USA,123 Main St,New York,10001,NY,5551234567,4111111111111111,123,12/25,Male,english

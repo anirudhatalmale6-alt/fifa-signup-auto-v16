@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FIFA Auto Flow",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Automatically navigates through FIFA signup and lottery application flow",
   "permissions": [
     "activeTab",
@@ -9,7 +9,7 @@
     "storage",
     "management",
     "webNavigation",
-    "debugger"
+    "scripting"
   ],
   "host_permissions": [
     "*://whoerip.com/*",
@@ -47,7 +47,7 @@
         "*://*.braintree.com/*",
         "*://*.checkout.com/*"
       ],
-      "js": ["tickets-content.js"],
+      "js": ["tickets-content.js", "automation-card.js"],
       "run_at": "document_end",
       "all_frames": false
     }
@@ -56,5 +56,11 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
+  },
+  "commands": {
+    "run-ticket-automation": {
+      "suggested_key": {"default": "Ctrl+Shift+F"},
+      "description": "Run Ticket Automation"
+    }
   }
 }

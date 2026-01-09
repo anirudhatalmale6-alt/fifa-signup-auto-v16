@@ -40,84 +40,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
   }
 
-  // Use debugger API to send REAL Ctrl+Shift+F keypress
-  if (message.action === 'sendCtrlShiftF') {
-    console.log('[FIFA Auto Flow] Sending REAL Ctrl+Shift+F via debugger API');
+  // Run ticket automation directly (instead of trying to trigger external extension)
+  if (message.action === 'sendCtrlShiftF' || message.action === 'runTicketAutomation') {
+    console.log('[FIFA Auto Flow] Running ticket automation directly');
 
     if (sender.tab && sender.tab.id) {
       const tabId = sender.tab.id;
 
-      // Attach debugger
-      chrome.debugger.attach({ tabId: tabId }, '1.3', () => {
-        if (chrome.runtime.lastError) {
-          console.log('[FIFA Auto Flow] Debugger attach error:', chrome.runtime.lastError.message);
-          sendResponse({ success: false, error: chrome.runtime.lastError.message });
-          return;
-        }
+      // First zoom to 35%
+      chrome.tabs.setZoom(tabId, 0.35).then(() => {
+        console.log('[FIFA Auto Flow] Zoomed to 35%');
 
-        // Send Ctrl+Shift+F key events
-        // Key down for Ctrl
-        chrome.debugger.sendCommand({ tabId: tabId }, 'Input.dispatchKeyEvent', {
-          type: 'keyDown',
-          key: 'Control',
-          code: 'ControlLeft',
-          windowsVirtualKeyCode: 17,
-          modifiers: 0
-        }, () => {
-          // Key down for Shift
-          chrome.debugger.sendCommand({ tabId: tabId }, 'Input.dispatchKeyEvent', {
-            type: 'keyDown',
-            key: 'Shift',
-            code: 'ShiftLeft',
-            windowsVirtualKeyCode: 16,
-            modifiers: 2 // Ctrl
-          }, () => {
-            // Key down for F
-            chrome.debugger.sendCommand({ tabId: tabId }, 'Input.dispatchKeyEvent', {
-              type: 'keyDown',
-              key: 'f',
-              code: 'KeyF',
-              windowsVirtualKeyCode: 70,
-              modifiers: 3 // Ctrl+Shift
-            }, () => {
-              // Key up for F
-              chrome.debugger.sendCommand({ tabId: tabId }, 'Input.dispatchKeyEvent', {
-                type: 'keyUp',
-                key: 'f',
-                code: 'KeyF',
-                windowsVirtualKeyCode: 70,
-                modifiers: 3
-              }, () => {
-                // Key up for Shift
-                chrome.debugger.sendCommand({ tabId: tabId }, 'Input.dispatchKeyEvent', {
-                  type: 'keyUp',
-                  key: 'Shift',
-                  code: 'ShiftLeft',
-                  windowsVirtualKeyCode: 16,
-                  modifiers: 2
-                }, () => {
-                  // Key up for Ctrl
-                  chrome.debugger.sendCommand({ tabId: tabId }, 'Input.dispatchKeyEvent', {
-                    type: 'keyUp',
-                    key: 'Control',
-                    code: 'ControlLeft',
-                    windowsVirtualKeyCode: 17,
-                    modifiers: 0
-                  }, () => {
-                    // Detach debugger after a short delay
-                    setTimeout(() => {
-                      chrome.debugger.detach({ tabId: tabId }, () => {
-                        console.log('[FIFA Auto Flow] Ctrl+Shift+F sent successfully, debugger detached');
-                      });
-                    }, 500);
-                  });
-                });
-              });
-            });
+        // Wait for zoom to apply, then run automation script
+        setTimeout(() => {
+          chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ['automation-tickets.js']
+          }).then(() => {
+            console.log('[FIFA Auto Flow] Ticket automation script executed');
+            sendResponse({ success: true });
+          }).catch((err) => {
+            console.log('[FIFA Auto Flow] Script execution error:', err);
+            sendResponse({ success: false, error: err.message });
           });
-        });
-
-        sendResponse({ success: true });
+        }, 150);
+      }).catch((err) => {
+        console.log('[FIFA Auto Flow] Zoom error:', err);
+        sendResponse({ success: false, error: err.message });
       });
 
       return true; // Keep message channel open
@@ -130,6 +79,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // When extension is installed
 chrome.runtime.onInstalled.addListener(() => {
   console.log('[FIFA Auto Flow] Extension installed');
+});
+
+// Ctrl+Shift+F keyboard shortcut (manual trigger)
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (!tab || !tab.id) return;
+  if (command === 'run-ticket-automation') {
+    console.log('[FIFA Auto Flow] Ctrl+Shift+F pressed - running ticket automation');
+
+    // First zoom to 35%
+    chrome.tabs.setZoom(tab.id, 0.35).then(() => {
+      console.log('[FIFA Auto Flow] Zoomed to 35%');
+
+      // Wait for zoom to apply, then run automation script
+      setTimeout(() => {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['automation-tickets.js']
+        }).then(() => {
+          console.log('[FIFA Auto Flow] Ticket automation script executed');
+        }).catch((err) => {
+          console.log('[FIFA Auto Flow] Script execution error:', err);
+        });
+      }, 150);
+    }).catch((err) => {
+      console.log('[FIFA Auto Flow] Zoom error:', err);
+    });
+  }
 });
 
 // Auto-refresh on connection errors - DISABLED by user request

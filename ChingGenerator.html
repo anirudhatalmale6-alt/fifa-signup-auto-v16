@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ching Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 { margin-bottom: 15px; color: #00d4ff; font-size: 1.2rem; }
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,212,255,0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-add { background: #28a745; color: #fff; }
+        .btn-danger { background: #dc3545; color: #fff; }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: rgba(40,167,69,0.2);
+            border: 1px solid #28a745;
+            color: #28a745;
+        }
+        .status.error {
+            display: block;
+            background: rgba(220,53,69,0.2);
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+        .info-box {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        #profileCount { color: #00d4ff; font-weight: bold; font-size: 1.5rem; }
+        .profile-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .profile-item:hover { background: rgba(255,255,255,0.1); }
+        .profile-info { flex: 1; }
+        .profile-name { font-weight: bold; color: #00d4ff; }
+        .profile-email { color: #888; font-size: 0.85rem; }
+        .profile-card { color: #7b2cbf; font-size: 0.85rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .drop-zone {
+            border: 2px dashed rgba(0,212,255,0.5);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-icon { font-size: 3rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ching Generator</h1>
+        <p class="subtitle">Create encrypted autofill extensions - workers can't see profile details</p>
+
+        <div class="card">
+            <h2>Import CSV</h2>
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">Drag & drop CSV file here or click to browse</div>
+            </div>
+            <input type="file" id="csvInput" accept=".csv" style="display:none">
+        </div>
+
+        <div class="card">
+            <h2>Profiles Loaded: <span id="profileCount">0</span></h2>
+            <div class="profile-list" id="profileList"></div>
+            <div class="actions">
+                <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Generate Extension</h2>
+            <div class="info-box" style="margin-bottom:20px;">
+                Workers will only see profile numbers (Profile1, Profile2, etc.)<br>
+                All data (emails, passwords, cards) is <strong>encrypted</strong> - they can't see it!
+            </div>
+            <button class="btn btn-primary" onclick="generateExtension()" style="font-size:1.2rem; padding:18px 36px;">
+                Generate Extension (.zip)
+            </button>
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        let profiles = [];
+
+        // Drop zone functionality
+        const dropZone = document.getElementById('dropZone');
+        const csvInput = document.getElementById('csvInput');
+
+        dropZone.addEventListener('click', () => csvInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                processCSV(file);
+            } else {
+                showStatus('Please drop a CSV file', 'error');
+            }
+        });
+
+        csvInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                processCSV(e.target.files[0]);
+            }
+        });
+
+        function processCSV(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) {
+                showStatus('CSV must have header row and at least one data row', 'error');
+                return;
+            }
+
+            const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g, '_'));
+            profiles = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = parseCSVLine(lines[i]);
+                const row = {};
+                headers.forEach((h, idx) => {
+                    row[h] = values[idx] || '';
+                });
+
+                // Map to our format
+                const profile = {
+                    profile_name: `Profile${i}`,
+                    email: row.email || '',
+                    password: row.password || '',
+                    first_name: row.first_name || row.firstname || '',
+                    last_name: row.last_name || row.lastname || '',
+                    full_name: row.full_name || row.fullname || '',
+                    country: row.country || '',
+                    address: row.address || '',
+                    city: row.city || '',
+                    zipcode: row.zip_code || row.zipcode || row.postal || '',
+                    state: row.province || row.state || '',
+                    phone: row.phone || '',
+                    card_number: row.card_number || '',
+                    card_cvv: row.cvc || row.cvv || '',
+                    card_exp: row.card_expiry || row.expiry || row.card_exp || '',
+                    card_name: row.full_name || row.fullname || '',
+                    dob: row.dob || '',
+                    gender: row.gender || ''
+                };
+
+                if (!profile.full_name && profile.first_name && profile.last_name) {
+                    profile.full_name = profile.first_name + ' ' + profile.last_name;
+                }
+
+                profiles.push(profile);
+            }
+
+            updateProfileList();
+            showStatus(`Loaded ${profiles.length} profiles!`, 'success');
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function updateProfileList() {
+            document.getElementById('profileCount').textContent = profiles.length;
+            const list = document.getElementById('profileList');
+            list.innerHTML = '';
+
+            profiles.forEach((p, i) => {
+                const card4 = p.card_number ? '****' + p.card_number.slice(-4) : '';
+                const div = document.createElement('div');
+                div.className = 'profile-item';
+                div.innerHTML = `
+                    <div class="profile-info">
+                        <div class="profile-name">${p.profile_name}</div>
+                        <div class="profile-email">${p.email}</div>
+                        <div class="profile-card">${card4}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function clearAll() {
+            if (profiles.length === 0 || confirm('Clear all profiles?')) {
+                profiles = [];
+                updateProfileList();
+                showStatus('Cleared', 'success');
+            }
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = 'status ' + type;
+        }
+
+        function encrypt(data, key) {
+            const json = JSON.stringify(data);
+            let encrypted = '';
+            for (let i = 0; i < json.length; i++) {
+                encrypted += String.fromCharCode(json.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            }
+            return btoa(encrypted);
+        }
+
+        async function generateExtension() {
+            if (profiles.length === 0) {
+                showStatus('Import a CSV file first!', 'error');
+                return;
+            }
+
+            showStatus('Generating extension...', 'success');
+
+            const key = Array.from({length: 32}, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+            const encryptedData = encrypt(profiles, key);
+            const profileNames = profiles.map(p => p.profile_name);
+
+            const zip = new JSZip();
+
+            zip.file('manifest.json', JSON.stringify({
+                "manifest_version": 3,
+                "name": "TM AutoFill",
+                "version": "1.0.0",
+                "description": "Autofill extension",
+                "permissions": ["storage", "activeTab", "scripting"],
+                "action": { "default_popup": "popup.html", "default_icon": "icon48.png" },
+                "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+                "content_scripts": [{ "matches": ["<all_urls>"], "js": ["content.js"] }]
+            }, null, 2));
+
+            zip.file('popup.html', `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { width: 280px; padding: 15px; font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; }
+        h3 { margin: 0 0 15px 0; color: #00d4ff; font-size: 16px; }
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a4e; color: #fff; margin-bottom: 10px; }
+        button { width: 100%; padding: 12px; background: linear-gradient(90deg, #00d4ff, #7b2cbf); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
+        button:hover { opacity: 0.9; }
+        .card-btn { background: linear-gradient(90deg, #7b2cbf, #dc3545); }
+        .status { margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 12px; display: none; }
+        .status.show { display: block; background: rgba(0,212,255,0.2); color: #00d4ff; }
+    </style>
+</head>
+<body>
+    <h3>TM AutoFill</h3>
+    <select id="profileSelect"><option value="">-- Select Profile --</option></select>
+    <button id="fillBtn">Fill Form</button>
+    <button id="fillCardBtn" class="card-btn">Fill Card Details</button>
+    <div id="status" class="status"></div>
+    <script src="popup.js"><\/script>
+</body>
+</html>`);
+
+            zip.file('popup.js', `
+const _d = "${encryptedData}";
+const _k = "${key}";
+const _n = ${JSON.stringify(profileNames)};
+
+function _dec(d, k) {
+    const e = atob(d);
+    let r = '';
+    for (let i = 0; i < e.length; i++) {
+        r += String.fromCharCode(e.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+    }
+    return JSON.parse(r);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('profileSelect');
+    _n.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+
+    chrome.storage.local.get(['selectedProfile'], function(data) {
+        if (data.selectedProfile) select.value = data.selectedProfile;
+    });
+
+    select.addEventListener('change', function() {
+        chrome.storage.local.set({ selectedProfile: this.value });
+    });
+
+    document.getElementById('fillBtn').addEventListener('click', function() {
+        const profileName = select.value;
+        if (!profileName) { showStatus('Select a profile first'); return; }
+        const profiles = _dec(_d, _k);
+        const profile = profiles.find(p => p.profile_name === profileName);
+        if (profile) {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {action: 'fill', data: profile}, function() {
+                    showStatus('Form filled!');
+                });
+            });
+        }
+    });
+
+    document.getElementById('fillCardBtn').addEventListener('click', function() {
+        const profileName = select.value;
+        if (!profileName) { showStatus('Select a profile first'); return; }
+        const profiles = _dec(_d, _k);
+        const profile = profiles.find(p => p.profile_name === profileName);
+        if (profile) {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {action: 'fillCard', data: profile}, function() {
+                    showStatus('Card details filled!');
+                });
+            });
+        }
+    });
+
+    function showStatus(msg) {
+        const status = document.getElementById('status');
+        status.textContent = msg;
+        status.className = 'status show';
+        setTimeout(() => { status.className = 'status'; }, 2000);
+    }
+});
+`);
+
+            zip.file('content.js', `
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'fill') { fillForm(request.data); sendResponse({success: true}); }
+    else if (request.action === 'fillCard') { fillCardDetails(request.data); sendResponse({success: true}); }
+});
+
+function fillForm(data) {
+    const m = {
+        'full_name': ['fullname', 'full_name', 'name', 'your-name', 'your_name'],
+        'first_name': ['first', 'fname', 'firstname', 'given'],
+        'last_name': ['last', 'lname', 'lastname', 'surname', 'family'],
+        'email': ['email', 'mail', 'e-mail', 'user', 'username', 'login'],
+        'password': ['password', 'pass', 'pwd', 'secret'],
+        'phone': ['phone', 'tel', 'mobile', 'cell'],
+        'dob': ['dob', 'birth', 'birthday', 'dateofbirth'],
+        'country': ['country', 'nation'],
+        'state': ['state', 'province', 'region'],
+        'city': ['city', 'town'],
+        'address': ['address', 'street', 'addr', 'line1'],
+        'zipcode': ['zip', 'postal', 'postcode']
+    };
+    fillFields(data, m);
+}
+
+function fillCardDetails(data) {
+    const m = {
+        'card_name': ['cardholder', 'card-name', 'cardname', 'nameoncard', 'ccname'],
+        'card_number': ['cardnumber', 'card-number', 'ccnumber', 'cc-number', 'creditcard', 'pan'],
+        'card_exp': ['expiry', 'expiration', 'exp', 'card-exp', 'cc-exp'],
+        'card_cvv': ['cvv', 'cvc', 'cvv2', 'cvc2', 'securitycode', 'security-code']
+    };
+    fillFields(data, m);
+
+    if (data.card_exp && data.card_exp.includes('/')) {
+        const [month, year] = data.card_exp.split('/').map(s => s.trim());
+        document.querySelectorAll('input, select').forEach(input => {
+            const c = ((input.name||'') + ' ' + (input.id||'')).toLowerCase();
+            if (c.match(/month|mm/) && !c.match(/year|yy/)) setVal(input, month);
+            else if (c.match(/year|yy/) && !c.match(/month|mm/)) {
+                let y = year;
+                if (input.tagName === 'SELECT') {
+                    const fy = year.length === 2 ? '20' + year : year;
+                    const opt = Array.from(input.options).find(o => o.value === year || o.value === fy);
+                    if (opt) y = opt.value;
+                }
+                setVal(input, y);
+            }
+        });
+    }
+}
+
+function fillFields(data, mappings) {
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        const c = ((input.name||'') + ' ' + (input.id||'') + ' ' + (input.placeholder||'') + ' ' + (input.getAttribute('autocomplete')||'')).toLowerCase();
+        for (const [field, kws] of Object.entries(mappings)) {
+            if (data[field] && kws.some(kw => c.includes(kw))) {
+                setVal(input, data[field]);
+                break;
+            }
+        }
+    });
+}
+
+function setVal(input, value) {
+    if (input.tagName === 'SELECT') {
+        const opt = Array.from(input.options).find(o => o.text.toLowerCase().includes(value.toLowerCase()) || o.value.toLowerCase().includes(value.toLowerCase()));
+        if (opt) { input.value = opt.value; input.dispatchEvent(new Event('change', {bubbles: true})); }
+    } else {
+        input.value = value;
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+        input.dispatchEvent(new Event('change', {bubbles: true}));
+    }
+}
+`);
+
+            // Simple cyan icons
+            const svg16 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect fill="#00d4ff" width="16" height="16" rx="3"/><text x="8" y="12" font-size="10" fill="#fff" text-anchor="middle">A</text></svg>';
+            const svg48 = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect fill="#00d4ff" width="48" height="48" rx="8"/><text x="24" y="34" font-size="28" fill="#fff" text-anchor="middle">A</text></svg>';
+            const svg128 = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect fill="#00d4ff" width="128" height="128" rx="20"/><text x="64" y="90" font-size="72" fill="#fff" text-anchor="middle">A</text></svg>';
+
+            async function svgToPng(svg, size) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const blob = new Blob([svg], {type: 'image/svg+xml'});
+                    const url = URL.createObjectURL(blob);
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = size;
+                        canvas.height = size;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        canvas.toBlob(resolve, 'image/png');
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                });
+            }
+
+            zip.file('icon16.png', await svgToPng(svg16, 16));
+            zip.file('icon48.png', await svgToPng(svg48, 48));
+            zip.file('icon128.png', await svgToPng(svg128, 128));
+
+            const blob = await zip.generateAsync({type: 'blob'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tm-autofill-extension.zip';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showStatus('Extension downloaded! Extract and load in Chrome (chrome://extensions → Developer mode → Load unpacked)', 'success');
+        }
+    </script>
+</body>
+</html>

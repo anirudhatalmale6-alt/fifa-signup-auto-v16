@@ -49,30 +49,16 @@
     document.dispatchEvent(event);
   }
 
-  // Trigger Ctrl+Shift+F via background script (uses debugger API for real key events)
+  // Trigger ticket automation via background script (runs automation-tickets.js directly)
   function triggerCtrlShiftF() {
-    console.log('[FIFA Auto Flow] Triggering Ctrl+Shift+F via debugger API...');
+    console.log('[FIFA Auto Flow] Triggering ticket automation...');
 
-    // Send message to background script to use debugger API
-    chrome.runtime.sendMessage({ action: 'sendCtrlShiftF' }, (response) => {
+    // Send message to background script to run ticket automation directly
+    chrome.runtime.sendMessage({ action: 'runTicketAutomation' }, (response) => {
       if (response && response.success) {
-        console.log('[FIFA Auto Flow] Ctrl+Shift+F sent via debugger API');
+        console.log('[FIFA Auto Flow] Ticket automation started successfully');
       } else {
-        console.log('[FIFA Auto Flow] Debugger API failed, trying JavaScript events...');
-        // Fallback to JavaScript events
-        const eventConfig = {
-          key: 'F',
-          code: 'KeyF',
-          keyCode: 70,
-          which: 70,
-          ctrlKey: true,
-          shiftKey: true,
-          bubbles: true,
-          cancelable: true
-        };
-        document.dispatchEvent(new KeyboardEvent('keydown', eventConfig));
-        window.dispatchEvent(new KeyboardEvent('keydown', eventConfig));
-        document.body.dispatchEvent(new KeyboardEvent('keydown', eventConfig));
+        console.log('[FIFA Auto Flow] Ticket automation failed:', response?.error || 'unknown error');
       }
     });
   }
