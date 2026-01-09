@@ -348,8 +348,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // ========== OTP VERIFICATION API ==========
 const OTP_API_URL = 'http://3.130.191.60:3000/api/getOtp';
-const OTP_MAX_RETRIES = 12; // 12 retries x 5 seconds = 60 seconds max
-const OTP_RETRY_INTERVAL = 5000; // 5 seconds
+const OTP_MAX_RETRIES = 30; // 30 retries x 2 seconds = 60 seconds max
+const OTP_RETRY_INTERVAL = 2000; // 2 seconds (faster polling)
 
 let otpFetching = false;
 let otpRetryCount = 0;
@@ -444,17 +444,44 @@ async function fetchOTP(email, tabId) {
       body: JSON.stringify({ email: email, otpType: 'fifa' })
     });
 
+    console.log('[FIFA] OTP API response status:', response.status);
+
     if (response.ok) {
       const data = await response.json();
-      const otpCode = data.code || data.otp || data;
+      console.log('[FIFA] OTP API response data:', JSON.stringify(data));
 
-      if (otpCode) {
+      // Extract OTP code - handle various response formats
+      let otpCode = null;
+      if (typeof data === 'string' && data.length > 0) {
+        otpCode = data;
+      } else if (typeof data === 'number') {
+        otpCode = String(data);
+      } else if (data && typeof data === 'object') {
+        // Try various field names
+        otpCode = data.code || data.otp || data.verificationCode || data.verification_code || data.value || data.result;
+        // If still nothing, check if it's a nested structure
+        if (!otpCode && data.data) {
+          otpCode = data.data.code || data.data.otp || data.data;
+        }
+      }
+
+      // Validate we got a real OTP (not null, not empty, not "null")
+      if (otpCode && String(otpCode).trim() !== '' && String(otpCode).toLowerCase() !== 'null') {
         console.log('[FIFA] OTP received:', otpCode);
 
         // Clear retry timer
         if (otpRetryTimer) clearTimeout(otpRetryTimer);
         otpRetryCount = 0;
         otpFetching = false;
+
+        // Remove "waiting for OTP" notification first
+        await chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          func: () => {
+            const waiting = document.getElementById('fifa-otp-waiting');
+            if (waiting) waiting.remove();
+          }
+        });
 
         // Inject OTP into page
         await chrome.scripting.executeScript({
@@ -468,7 +495,7 @@ async function fetchOTP(email, tabId) {
     }
 
     // 404 or no OTP - retry
-    console.log('[FIFA] No OTP yet, retrying...');
+    console.log('[FIFA] No OTP yet (attempt', otpRetryCount + 1, '/', OTP_MAX_RETRIES, '), retrying in', OTP_RETRY_INTERVAL/1000, 'sec...');
     otpRetryCount++;
 
     if (otpRetryCount < OTP_MAX_RETRIES) {
@@ -478,10 +505,13 @@ async function fetchOTP(email, tabId) {
       otpFetching = false;
       otpRetryCount = 0;
 
-      // Notify user
+      // Remove waiting notification and show error
       await chrome.scripting.executeScript({
         target: { tabId: tabId },
         func: () => {
+          const waiting = document.getElementById('fifa-otp-waiting');
+          if (waiting) waiting.remove();
+
           const notif = document.createElement('div');
           notif.style.cssText = 'position:fixed;top:20px;right:20px;background:#8b0000;color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
           notif.textContent = 'OTP not received after 60 seconds';
@@ -500,6 +530,15 @@ async function fetchOTP(email, tabId) {
     } else {
       otpFetching = false;
       otpRetryCount = 0;
+
+      // Remove waiting notification on error
+      await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: () => {
+          const waiting = document.getElementById('fifa-otp-waiting');
+          if (waiting) waiting.remove();
+        }
+      });
     }
   }
 
@@ -561,5 +600,5 @@ async function startOTPFetch(tabId) {
 
 // Log when extension is installed/updated
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[FIFA] All-in-One extension installed/updated v2.5.0');
+  console.log('[FIFA] All-in-One extension installed/updated v2.6.0');
 });
