@@ -17,46 +17,47 @@
     </div>
 
     <div class="controls">
-      <div class="mode-buttons">
-        <button id="directBtn" class="mode-btn">
-          <span class="btn-icon">🚫</span>
-          <span class="btn-text">Direct Connection</span>
-        </button>
-        
-        <button id="proxyBtn" class="mode-btn">
-          <span class="btn-icon">🔒</span>
-          <span class="btn-text">Multilogin Proxy</span>
-        </button>
+      <div class="proxy-list-section">
+        <label class="input-label">Select Proxy (from proxy.txt)</label>
+        <select id="proxySelect" class="proxy-select">
+          <option value="">-- Load proxies first --</option>
+        </select>
+        <div class="proxy-buttons">
+          <button id="loadProxiesBtn" class="mode-btn small-btn">
+            <span class="btn-text">Load Proxies</span>
+          </button>
+          <button id="useSelectedBtn" class="mode-btn small-btn primary-btn">
+            <span class="btn-text">Use Selected</span>
+          </button>
+        </div>
+        <div class="proxy-count" id="proxyCount"></div>
       </div>
 
       <div class="divider">
         <span>OR</span>
       </div>
 
-      <div class="custom-proxy-section">
-        <label for="proxyInput" class="input-label">Custom HTTP Proxy</label>
-        <input 
-          type="text" 
-          id="proxyInput" 
-          class="proxy-input" 
-          placeholder="host:port:user:pass"
-          autocomplete="off"
-        >
-        <button id="customProxyBtn" class="mode-btn custom-btn">
-          <span class="btn-icon">🔧</span>
-          <span class="btn-text">Use Custom Proxy</span>
+      <div class="mode-buttons">
+        <button id="directBtn" class="mode-btn">
+          <span class="btn-icon">🚫</span>
+          <span class="btn-text">Direct Connection</span>
         </button>
-        <div class="help-text">
-          Format: <code>host:port:user:pass</code><br>
-          Example: <code>proxy.example.com:8080:username:password</code><br>
-          <strong>Note:</strong> For authenticated proxies, Chrome will prompt for credentials. Enter username/password when prompted.
-        </div>
+
+        <button id="proxyBtn" class="mode-btn">
+          <span class="btn-icon">🔒</span>
+          <span class="btn-text">Multilogin Proxy</span>
+        </button>
+      </div>
+
+      <div class="help-text">
+        <strong>proxy.txt format:</strong> one proxy per line<br>
+        <code>host:port:username:password</code>
       </div>
     </div>
 
     <div class="footer">
       <div class="info-text">
-        Works with Multilogin 6 profiles
+        Alt+Q = Switch to Multilogin Proxy
       </div>
     </div>
   </div>
@@ -64,4 +65,3 @@
   <script src="popup.js"></script>
 </body>
 </html>
-

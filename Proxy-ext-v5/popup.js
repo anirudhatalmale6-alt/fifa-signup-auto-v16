@@ -5,17 +5,22 @@ let currentState = {
   customProxy: null
 };
 
+let proxies = [];
+
 // DOM elements
 const directBtn = document.getElementById('directBtn');
 const proxyBtn = document.getElementById('proxyBtn');
-const customProxyBtn = document.getElementById('customProxyBtn');
-const proxyInput = document.getElementById('proxyInput');
+const proxySelect = document.getElementById('proxySelect');
+const loadProxiesBtn = document.getElementById('loadProxiesBtn');
+const useSelectedBtn = document.getElementById('useSelectedBtn');
+const proxyCount = document.getElementById('proxyCount');
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   await loadCurrentState();
+  await loadProxiesFromFile();
   setupEventListeners();
   updateUI();
 });
@@ -24,31 +29,72 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadCurrentState() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'getState' });
-    
-    // Check if service worker responded
+
     if (chrome.runtime.lastError) {
       console.warn('Service worker not available:', chrome.runtime.lastError.message);
-      // Use default state if service worker unavailable
       currentState = { mode: 'proxy', customProxy: null };
       return;
     }
-    
+
     if (response && response.state) {
       currentState = response.state;
-      
-      // Populate custom proxy input if in custom mode
-      if (currentState.mode === 'custom' && currentState.customProxy) {
-        const { host, port, username, password } = currentState.customProxy;
-        let proxyString = `${host}:${port}`;
-        if (username) proxyString += `:${username}`;
-        if (password) proxyString += `:${password}`;
-        proxyInput.value = proxyString;
-      }
     }
   } catch (error) {
     console.error('Error loading state:', error);
-    // Don't show error on initial load - just use defaults
     currentState = { mode: 'proxy', customProxy: null };
+  }
+}
+
+// Load proxies from proxy.txt file
+async function loadProxiesFromFile() {
+  try {
+    const response = await fetch(chrome.runtime.getURL('proxy.txt'));
+    const text = await response.text();
+
+    proxies = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+
+    populateProxySelect();
+    proxyCount.textContent = `${proxies.length} proxies loaded`;
+  } catch (error) {
+    console.error('Error loading proxy.txt:', error);
+    proxyCount.textContent = 'Error loading proxy.txt';
+  }
+}
+
+// Populate the proxy dropdown
+function populateProxySelect() {
+  proxySelect.innerHTML = '';
+
+  if (proxies.length === 0) {
+    proxySelect.innerHTML = '<option value="">-- No proxies in proxy.txt --</option>';
+    return;
+  }
+
+  proxies.forEach((proxy, index) => {
+    const option = document.createElement('option');
+    option.value = proxy;
+    // Show shortened version in dropdown
+    const parts = proxy.split(':');
+    const displayText = `${index + 1}. ${parts[0]}:${parts[1]}`;
+    option.textContent = displayText;
+    proxySelect.appendChild(option);
+  });
+
+  // Select current proxy if it matches
+  if (currentState.mode === 'custom' && currentState.customProxy) {
+    const { host, port, username, password } = currentState.customProxy;
+    let currentProxyStr = `${host}:${port}`;
+    if (username) currentProxyStr += `:${username}`;
+    if (password) currentProxyStr += `:${password}`;
+
+    for (let i = 0; i < proxySelect.options.length; i++) {
+      if (proxySelect.options[i].value === currentProxyStr) {
+        proxySelect.selectedIndex = i;
+        break;
+      }
+    }
   }
 }
 
@@ -56,32 +102,61 @@ async function loadCurrentState() {
 function setupEventListeners() {
   directBtn.addEventListener('click', () => toggleProxy('direct'));
   proxyBtn.addEventListener('click', () => toggleProxy('proxy'));
-  customProxyBtn.addEventListener('click', () => toggleCustomProxy());
-  
-  // Allow Enter key to submit custom proxy
-  proxyInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      toggleCustomProxy();
+  loadProxiesBtn.addEventListener('click', loadProxiesFromFile);
+  useSelectedBtn.addEventListener('click', useSelectedProxy);
+}
+
+// Use selected proxy from dropdown
+async function useSelectedProxy() {
+  const selectedProxy = proxySelect.value;
+
+  if (!selectedProxy) {
+    showError('Please select a proxy');
+    return;
+  }
+
+  setButtonsEnabled(false);
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'toggleProxy',
+      mode: 'custom',
+      customProxy: selectedProxy
+    });
+
+    if (chrome.runtime.lastError) {
+      throw new Error(chrome.runtime.lastError.message || 'Service worker not available');
     }
-  });
+
+    if (response && response.success) {
+      currentState = response.state;
+      updateUI();
+      showSuccess('Proxy activated!');
+    } else {
+      throw new Error(response?.error || 'Failed to set proxy');
+    }
+  } catch (error) {
+    console.error('Proxy error:', error);
+    showError(error.message || 'Failed to set proxy');
+  } finally {
+    setButtonsEnabled(true);
+  }
 }
 
 // Toggle proxy mode
 async function toggleProxy(mode) {
-  // Disable buttons during operation
   setButtonsEnabled(false);
-  
+
   try {
     const response = await chrome.runtime.sendMessage({
       action: 'toggleProxy',
       mode: mode
     });
-    
-    // Check if service worker responded
+
     if (chrome.runtime.lastError) {
       throw new Error(chrome.runtime.lastError.message || 'Service worker not available');
     }
-    
+
     if (response && response.success) {
       currentState = response.state;
       updateUI();
@@ -91,67 +166,7 @@ async function toggleProxy(mode) {
     }
   } catch (error) {
     console.error('Toggle error:', error);
-    showError(error.message || 'Failed to toggle proxy. Try reloading the extension.');
-  } finally {
-    setButtonsEnabled(true);
-  }
-}
-
-// Toggle custom proxy
-async function toggleCustomProxy() {
-  const proxyString = proxyInput.value.trim();
-  
-  if (!proxyString) {
-    showError('Please enter a proxy string');
-    proxyInput.focus();
-    return;
-  }
-  
-  // Validate format
-  const parts = proxyString.split(':');
-  if (parts.length < 2) {
-    showError('Invalid format. Use: host:port:user:pass');
-    proxyInput.focus();
-    return;
-  }
-  
-  const port = parseInt(parts[1], 10);
-  if (isNaN(port) || port < 1 || port > 65535) {
-    showError('Invalid port number');
-    proxyInput.focus();
-    return;
-  }
-  
-  setButtonsEnabled(false);
-  
-  try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'toggleProxy',
-      mode: 'custom',
-      customProxy: proxyString
-    });
-    
-    // Check if service worker responded
-    if (chrome.runtime.lastError) {
-      throw new Error(chrome.runtime.lastError.message || 'Service worker not available');
-    }
-    
-    if (response && response.success) {
-      currentState = response.state;
-      updateUI();
-      
-      // Check if proxy has authentication
-      if (proxyString.includes(':') && proxyString.split(':').length >= 4) {
-        showSuccess('Custom proxy set. If page reloads, check for Chrome authentication prompt. If no prompt appears, this proxy may not work with Chrome extensions.');
-      } else {
-        showSuccess('Switched to custom proxy');
-      }
-    } else {
-      throw new Error(response?.error || 'Failed to set custom proxy');
-    }
-  } catch (error) {
-    console.error('Custom proxy error:', error);
-    showError(error.message || 'Failed to set custom proxy. Try reloading the extension.');
+    showError(error.message || 'Failed to toggle proxy');
   } finally {
     setButtonsEnabled(true);
   }
@@ -159,23 +174,18 @@ async function toggleCustomProxy() {
 
 // Update UI based on current state
 function updateUI() {
-  // Update status indicator
   statusDot.className = 'status-dot';
   statusDot.classList.add(`active-${currentState.mode}`);
-  
+
   statusText.textContent = getStatusText(currentState.mode);
-  
-  // Update button states
+
   directBtn.classList.remove('active');
   proxyBtn.classList.remove('active');
-  customProxyBtn.classList.remove('active');
-  
+
   if (currentState.mode === 'direct') {
     directBtn.classList.add('active');
   } else if (currentState.mode === 'proxy') {
     proxyBtn.classList.add('active');
-  } else if (currentState.mode === 'custom') {
-    customProxyBtn.classList.add('active');
   }
 }
 
@@ -185,6 +195,9 @@ function getStatusText(mode) {
     case 'direct':
       return 'Direct Connection';
     case 'custom':
+      if (currentState.customProxy) {
+        return `Proxy: ${currentState.customProxy.host}:${currentState.customProxy.port}`;
+      }
       return 'Custom Proxy Active';
     case 'proxy':
     default:
@@ -209,13 +222,13 @@ function getModeLabel(mode) {
 function setButtonsEnabled(enabled) {
   directBtn.disabled = !enabled;
   proxyBtn.disabled = !enabled;
-  customProxyBtn.disabled = !enabled;
-  proxyInput.disabled = !enabled;
+  loadProxiesBtn.disabled = !enabled;
+  useSelectedBtn.disabled = !enabled;
+  proxySelect.disabled = !enabled;
 }
 
 // Show success message
 function showSuccess(message) {
-  // Simple visual feedback - could be enhanced with toast notification
   statusText.textContent = message;
   setTimeout(() => {
     statusText.textContent = getStatusText(currentState.mode);
@@ -231,4 +244,3 @@ function showError(message) {
     statusText.style.color = '';
   }, 3000);
 }
-

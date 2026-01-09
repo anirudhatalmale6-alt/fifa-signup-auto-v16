@@ -186,6 +186,53 @@ body {
   margin-top: 5px;
 }
 
+.proxy-list-section {
+  margin-bottom: 10px;
+}
+
+.proxy-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 10px;
+  background: white;
+  cursor: pointer;
+}
+
+.proxy-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.proxy-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.small-btn {
+  padding: 10px 15px;
+  font-size: 12px;
+}
+
+.primary-btn {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.primary-btn:hover {
+  background: #5a6fd6;
+}
+
+.proxy-count {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #666;
+}
+
 .help-text {
   margin-top: 10px;
   font-size: 11px;

@@ -1,1 +1,6 @@
-b2b-s3.liveproxies.io:7383:LV22356609-lv_us-252341:BWT3m8egQvp4MM8l9in5
+# Paste your proxies here - one per line
+# Format: host:port:username:password
+# Example:
+b2b-s9.liveproxies.io:7383:LV22356609-lv_us-61871:BWT3m8egQvp4MM819in5
+b2b-s10.liveproxies.io:7383:LV22356609-lv_us-585783:BWT3m8egQvp4MM819in5
+b2b-s11.liveproxies.io:7383:LV22356609-lv_us-260775:BWT3m8egQvp4MM819in5
