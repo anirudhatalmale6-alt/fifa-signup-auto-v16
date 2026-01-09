@@ -186,15 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Select matches button
-  document.getElementById('selectMatchesBtn').addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-      chrome.tabs.sendMessage(tab.id, { action: 'selectMatches' });
-      showStatus('Ticket selection started!');
-    }
-  });
-
   // Get OTP button
   document.getElementById('getOtpBtn').addEventListener('click', async () => {
     chrome.runtime.sendMessage({ action: 'getOTP' }, (response) => {

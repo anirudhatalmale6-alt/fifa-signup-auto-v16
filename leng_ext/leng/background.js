@@ -304,8 +304,6 @@ chrome.commands.onCommand.addListener(async (command) => {
 
   if (command === 'autofill') {
     injectAutofillIntoAllFrames(tab.id);
-  } else if (command === 'select-matches') {
-    chrome.tabs.sendMessage(tab.id, { action: 'selectMatches' });
   } else if (command === 'get-otp') {
     startOTPFetch(tab.id);
   }
