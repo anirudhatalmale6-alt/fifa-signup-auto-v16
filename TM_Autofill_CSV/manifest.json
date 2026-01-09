@@ -1,0 +1,62 @@
+{
+    "manifest_version": 3,
+    "name": "TM AutoFill CSV",
+    "description": "TM Autofill with CSV support for FIFA",
+    "version": "1.5.0",
+    "icons": {
+        "16": "logo/logo-16.png",
+        "48": "logo/logo-48.png",
+        "128": "logo/logo-128.png"
+    },
+    "options_page": "settings/settings.html",
+    "action": {
+        "default_title": "TM AutoFill",
+        "default_popup": "popup/popup.html"
+    },
+    "permissions": [
+        "activeTab",
+        "tabs",
+        "storage",
+        "scripting",
+        "contextMenus",
+        "declarativeContent",
+        "webNavigation",
+        "identity",
+        "identity.email",
+        "commands",
+        "management",
+        "webRequest",
+        "alarms"
+    ],
+    "commands": {
+        "autofill": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+Z"
+            },
+            "description": "Autofill"
+        }
+    },
+    "host_permissions": [
+        "*://*/*"
+    ],
+    "background": {
+        "service_worker": "service-worker.js"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["accounts.csv"],
+            "matches": ["<all_urls>"]
+        }
+    ],
+    "content_scripts": [
+        {
+            "js": [
+                "foreground.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ],
+            "all_frames": true
+        }
+    ]
+}

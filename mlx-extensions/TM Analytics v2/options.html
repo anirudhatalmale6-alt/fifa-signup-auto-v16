@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Options</title>
+	<meta charset="utf-8">
+	<style>
+		.alert {
+			padding: 15px;
+			margin-bottom: 20px;
+			border: 1px solid transparent;
+			border-radius: 4px;
+		}
+		.success {
+			color: #3c763d;
+			background-color: #dff0d8;
+			border-color: #d6e9c6;
+		}
+		.error {
+			color: #a94442;
+			background-color: #f2dede;
+			border-color: #ebccd1;
+		}
+		label {
+			display: block;
+			margin: 10px auto;
+			padding: 0 5px;
+			width: 370px;
+		}
+		input {
+			width: 362px
+		}
+
+		#notifications {
+			width: auto;
+		}
+		
+		#save {
+			display: inline-block;
+			margin-bottom: 0;
+			font-weight: 400;
+			text-align: center;
+			vertical-align: middle;
+			cursor: pointer;
+			background-image: none;
+			border: 1px solid transparent;
+			white-space: nowrap;
+			padding: 6px 12px;
+			font-size: 14px;
+			line-height: 1.42857143;
+			border-radius: 4px;
+			user-select: none;
+			
+			color: #fff;
+			background-color: #428bca;
+			border-color: #357ebd;
+		}
+	</style>
+</head>
+<body>
+	<div id="status"></div>
+
+	<label>
+		Spreadsheet ID
+		<input type="text" id="spreadsheetId">
+	</label>
+
+	<label>
+		Data Sheet
+		<input type="text" id="data_sheet">
+	</label>
+
+	<label>
+		Purchase History Sheet
+		<input type="text" id="purchase_sheet">
+	</label>
+
+	<label>
+		Profile Name
+		<input type="text" id="profile_name">
+	</label>
+	
+	<p>
+		<button id="save">Save</button>
+	</p>
+
+	<script src="options.js"></script>
+</body>
+</html>

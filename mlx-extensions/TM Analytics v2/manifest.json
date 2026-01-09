@@ -1,0 +1,36 @@
+{
+	"version": "2.1.5",
+	"manifest_version": 2,
+	"name": "TM Analytics",
+	"description": "TM Analytics v2",
+	"icons": {
+		"128": "icon.png"
+	},
+	"permissions": [
+		"tabs",
+		"storage",
+		"management",
+		"alarms",
+		"notifications",
+		"webNavigation",
+		"https://sheets.googleapis.com/*",
+		"*://*.ticketmaster.com/*",
+		"*://*.ticketmaster.ca/*",
+		"*://*.livenation.com/*",
+		"*://*.queue-it.net/*",
+		"*://3.16.217.8/*"
+	],
+	"background": {
+		"scripts": ["back.js", "jsrsasign-rsa-min.js"],
+		"persistent": false
+	},
+	"content_scripts": [{
+		"js": ["content.js"],
+		"matches": ["*://*.ticketmaster.com/*", "*://*.ticketmaster.ca/*", "*://*.livenation.com/*", "*://shop.axs.com/*"]
+	}],
+	"options_ui": {
+		"page": "options.html",
+		"open_in_tab": false
+	},
+	"minimum_chrome_version":"66.0.0"
+}

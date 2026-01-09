@@ -355,74 +355,98 @@ let otpFetching = false;
 let otpRetryCount = 0;
 let otpRetryTimer = null;
 
-// Function to inject OTP into page
+// Function to inject OTP into page (React-compatible)
 function getOTPFillFunction() {
   return function(otpCode) {
     console.log('[FIFA] Filling OTP code:', otpCode);
 
-    // Find OTP input fields
-    const otpInputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"]');
-    let filled = false;
+    // React-compatible value setter
+    function changeValueReact(el, value) {
+      if (!el) return false;
+      let lastValue = el.value;
+      el.value = value;
 
-    for (const input of otpInputs) {
-      const ph = (input.placeholder || '').toLowerCase();
-      const nm = (input.name || '').toLowerCase();
-      const id = (input.id || '').toLowerCase();
+      let event = new Event('input', { bubbles: true });
+      event.simulated = true;
 
-      // Get nearby text for context
-      let context = '';
-      let parent = input.parentElement;
-      for (let i = 0; i < 5 && parent; i++) {
-        context += ' ' + (parent.textContent || '').toLowerCase();
-        parent = parent.parentElement;
+      // Handle React's value tracker
+      let tracker = el._valueTracker;
+      if (tracker) {
+        tracker.setValue(lastValue);
       }
 
-      // Check if this looks like an OTP/verification code input
-      if (ph.includes('code') || ph.includes('otp') || ph.includes('verification') ||
-          nm.includes('code') || nm.includes('otp') || nm.includes('verification') ||
-          id.includes('code') || id.includes('otp') || id.includes('verification') ||
-          context.includes('verification code') || context.includes('enter code') ||
-          context.includes('otp') || context.includes('verify')) {
-
-        // Set value using React-compatible method
-        input.focus();
-        input.value = '';
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-        nativeInputValueSetter.call(input, otpCode);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-        input.dispatchEvent(new Event('blur', { bubbles: true }));
-
-        filled = true;
-        console.log('[FIFA] OTP filled into:', nm || id || 'input');
-        break;
-      }
+      el.dispatchEvent(event);
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
     }
 
-    // If not found by context, try filling the first visible number input
+    // Specific selectors for OTP inputs (from working extension + FIFA-specific)
+    const selectors = [
+      "input#mfa-code-input-field",
+      "input[name='otp']",
+      "input#otp-input-input",
+      "input#mfa-code-input-field-input",
+      "input#otp",
+      "input#iOttText",
+      "input[placeholder='Enter Code']",
+      "input[placeholder*='code' i]",
+      "input[placeholder*='otp' i]",
+      "input[placeholder*='verification' i]"
+    ];
+
+    let filled = false;
+
+    // First try specific selectors
+    for (const selector of selectors) {
+      try {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          elements.forEach(element => {
+            if (changeValueReact(element, otpCode)) {
+              filled = true;
+              console.log('[FIFA] OTP filled via selector:', selector);
+            }
+          });
+          if (filled) break;
+        }
+      } catch (e) {}
+    }
+
+    // Fallback: find by context if no specific selector matched
     if (!filled) {
+      const otpInputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"]');
       for (const input of otpInputs) {
-        const rect = input.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0 && input.offsetParent !== null) {
-          // Check if it's a short input (likely OTP)
-          const maxLen = input.maxLength || 10;
-          if (maxLen <= 10) {
-            input.focus();
-            input.value = '';
-            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            nativeInputValueSetter.call(input, otpCode);
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-            input.dispatchEvent(new Event('blur', { bubbles: true }));
+        const ph = (input.placeholder || '').toLowerCase();
+        const nm = (input.name || '').toLowerCase();
+        const id = (input.id || '').toLowerCase();
+
+        let context = '';
+        let parent = input.parentElement;
+        for (let i = 0; i < 5 && parent; i++) {
+          context += ' ' + (parent.textContent || '').toLowerCase();
+          parent = parent.parentElement;
+        }
+
+        if (ph.includes('code') || ph.includes('otp') || ph.includes('verification') ||
+            nm.includes('code') || nm.includes('otp') || nm.includes('verification') ||
+            id.includes('code') || id.includes('otp') || id.includes('verification') ||
+            context.includes('verification code') || context.includes('enter code') ||
+            context.includes('otp') || context.includes('verify')) {
+
+          if (changeValueReact(input, otpCode)) {
             filled = true;
-            console.log('[FIFA] OTP filled into first visible input');
+            console.log('[FIFA] OTP filled via context match:', nm || id || ph);
             break;
           }
         }
       }
     }
 
-    // Show notification
+    // Remove waiting notification
+    const waiting = document.getElementById('fifa-otp-waiting');
+    if (waiting) waiting.remove();
+
+    // Show result notification
     const notif = document.createElement('div');
     notif.style.cssText = 'position:fixed;top:20px;right:20px;background:' + (filled ? '#1a472a' : '#8b0000') + ';color:white;padding:16px 24px;border-radius:8px;z-index:999999;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
     notif.textContent = filled ? `OTP filled: ${otpCode}` : 'OTP received but no input found';
@@ -547,8 +571,12 @@ async function fetchOTP(email, tabId) {
 
 // Start OTP fetch process
 async function startOTPFetch(tabId) {
+  console.log('[FIFA] ====== OTP FETCH STARTED ======');
+  console.log('[FIFA] Tab ID:', tabId);
+
   // Get current account email
   let accounts = await loadAccountsFromCSV();
+  console.log('[FIFA] Loaded accounts from CSV:', accounts.length);
   if (accounts.length === 0) {
     const result = await chrome.storage.local.get(['accounts']);
     accounts = result.accounts || [];
@@ -557,6 +585,9 @@ async function startOTPFetch(tabId) {
   const rowResult = await chrome.storage.local.get(['selectedRow']);
   const selectedRow = rowResult.selectedRow || 0;
   const account = accounts[selectedRow];
+
+  console.log('[FIFA] Selected row:', selectedRow);
+  console.log('[FIFA] Account:', account ? account.email : 'none');
 
   if (!account || !account.email) {
     console.log('[FIFA] No account email found for OTP');
