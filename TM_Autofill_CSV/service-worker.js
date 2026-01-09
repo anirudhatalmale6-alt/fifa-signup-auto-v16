@@ -723,15 +723,17 @@ const fetchEmailOTP = (email, otpType, tabId) => {
         retryCount = 0;
         fetching = false;
 
-        // Always show alert with code first (guaranteed to work)
+        // Send code back to content script via message (more reliable than script injection)
         if (tabId) {
-          chrome.scripting.executeScript({
-            target: { tabId },
-            func: (otpCode) => { alert("OTP Code: " + otpCode + "\n\nCopy and paste into the field."); },
-            args: [code],
-          }).catch((err) => console.log("Alert failed:", err));
+          // Method 1: Send message to content script to show alert
+          chrome.tabs.sendMessage(tabId, {
+            type: 'showOTPCode',
+            code: code
+          }).catch((err) => {
+            debugLog(`Tab message failed: ${err.message}`);
+          });
 
-          // Then try to auto-fill
+          // Method 2: Also try script injection as backup
           chrome.scripting
             .executeScript({
               target: { tabId, allFrames: true },

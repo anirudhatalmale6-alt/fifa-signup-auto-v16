@@ -83,6 +83,36 @@ const getQueueDetails = async (url, userData) => {
 const get_current_date = () => new Date().toLocaleString();
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  // Handle OTP code from service worker
+  if (message.type === "showOTPCode") {
+    const code = message.code;
+    console.log("[FIFA] Received OTP code:", code);
+
+    // Show alert with code
+    alert("🔐 OTP Code: " + code + "\n\nCopy this code and paste it into the field!");
+
+    // Also try to auto-fill
+    const otpSelectors = [
+      "input#otp",
+      "input[name='otp']",
+      "input[placeholder='Enter Code']",
+      "input[placeholder*='code' i]",
+      "input[type='text'][maxlength='6']"
+    ];
+
+    for (const selector of otpSelectors) {
+      const input = document.querySelector(selector);
+      if (input) {
+        input.value = code;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log("[FIFA] Auto-filled OTP into:", selector);
+        break;
+      }
+    }
+    return;
+  }
+
   if (message.type == "callFunction") {
     var functionName = message.functionName;
     var args = message.args;
