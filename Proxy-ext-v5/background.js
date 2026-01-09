@@ -11,37 +11,53 @@ const DEFAULT_STATE = {
 // Store current proxy credentials for webRequest authentication
 let currentProxyAuth = null;
 
-// Load proxy config from proxy.txt file (format: host:port:username:password)
-async function loadProxyConfig() {
+// Load ALL proxies from proxy.txt file
+async function loadAllProxies() {
   try {
     const response = await fetch(chrome.runtime.getURL('proxy.txt'));
     const text = await response.text();
-    const line = text.trim();
 
-    if (!line || line.startsWith('#')) {
-      console.log('[Proxy] No proxy configured in proxy.txt');
-      return null;
-    }
+    const proxies = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
 
-    const parts = line.split(':');
-    if (parts.length < 2) {
-      console.log('[Proxy] Invalid proxy format in proxy.txt');
-      return null;
-    }
-
-    const config = {
-      host: parts[0],
-      port: parts[1],
-      username: parts[2] || '',
-      password: parts[3] || ''
-    };
-
-    console.log('[Proxy] Loaded config:', config.host + ':' + config.port);
-    return config;
+    console.log('[Proxy] Loaded', proxies.length, 'proxies from file');
+    return proxies;
   } catch (error) {
     console.error('[Proxy] Error loading proxy.txt:', error);
+    return [];
+  }
+}
+
+// Parse proxy string to config object
+function parseProxyString(proxyStr) {
+  const parts = proxyStr.split(':');
+  if (parts.length < 2) return null;
+
+  return {
+    host: parts[0],
+    port: parts[1],
+    username: parts[2] || '',
+    password: parts[3] || ''
+  };
+}
+
+// Load a RANDOM proxy from proxy.txt
+async function loadProxyConfig() {
+  const proxies = await loadAllProxies();
+
+  if (proxies.length === 0) {
+    console.log('[Proxy] No proxies in proxy.txt');
     return null;
   }
+
+  // Pick random proxy
+  const randomIndex = Math.floor(Math.random() * proxies.length);
+  const randomProxy = proxies[randomIndex];
+
+  console.log('[Proxy] 🎲 Randomly selected proxy #' + (randomIndex + 1) + ' of ' + proxies.length);
+
+  return parseProxyString(randomProxy);
 }
 
 // Set custom proxy from config
