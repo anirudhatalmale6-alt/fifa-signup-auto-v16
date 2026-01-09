@@ -1860,6 +1860,7 @@ let radios = null; //Added by O
 function triggerFifaOTP(profile) {
   const email = profile.acc_email || profile.email;
   console.log("[FIFA] triggerFifaOTP called with email:", email);
+  alert("Fetching OTP for: " + email);
 
   if (!email) {
     console.log("[FIFA] ERROR: No email in profile!");
