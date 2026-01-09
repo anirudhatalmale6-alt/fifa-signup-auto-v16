@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "TM AutoFill CSV",
     "description": "TM Autofill with CSV support for FIFA",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "icons": {
         "16": "logo/logo-16.png",
         "48": "logo/logo-48.png",

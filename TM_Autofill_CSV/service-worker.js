@@ -222,11 +222,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "getEmailOTP") {
     console.log("===== getEmailOTP Event =====");
     console.log("Message data:", JSON.stringify(message.data));
-    console.log("Sender tab:", sender.tab ? sender.tab.id : 'no tab');
     const { email, otpType } = message.data;
-    const { tab } = sender;
-    console.log("Calling handleEmailOTP with email:", email, "otpType:", otpType, "tabId:", tab ? tab.id : 'no tab');
-    handleEmailOTP(email, otpType, tab.id);
+
+    // Get tab ID from sender or query active tab
+    let tabId = sender.tab ? sender.tab.id : null;
+    console.log("Sender tab ID:", tabId);
+
+    if (tabId) {
+      handleEmailOTP(email, otpType, tabId);
+    } else {
+      // Fallback: get active tab
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        if (tabs && tabs[0]) {
+          console.log("Using active tab ID:", tabs[0].id);
+          handleEmailOTP(email, otpType, tabs[0].id);
+        } else {
+          console.log("No tab found, fetching OTP anyway");
+          handleEmailOTP(email, otpType, null);
+        }
+      });
+    }
   }
 
   if (message.action === "getPhoneOTP") {
@@ -707,15 +722,25 @@ const fetchEmailOTP = (email, otpType, tabId) => {
         clearTimeout(retryTimer);
         retryCount = 0;
         fetching = false;
-        
-        chrome.scripting
-          .executeScript({
-            target: { tabId, allFrames: true },
-            func: dynamicFunctionForEmailOTP,
+
+        // Always show alert with code first (guaranteed to work)
+        if (tabId) {
+          chrome.scripting.executeScript({
+            target: { tabId },
+            func: (otpCode) => { alert("OTP Code: " + otpCode + "\n\nCopy and paste into the field."); },
             args: [code],
-          })
-          .then(() => debugLog(`Email OTP: Script injected successfully`))
-          .catch((err) => debugLog(`Email OTP: Script injection failed: ${err.message}`));
+          }).catch((err) => console.log("Alert failed:", err));
+
+          // Then try to auto-fill
+          chrome.scripting
+            .executeScript({
+              target: { tabId, allFrames: true },
+              func: dynamicFunctionForEmailOTP,
+              args: [code],
+            })
+            .then(() => debugLog(`Email OTP: Script injected successfully`))
+            .catch((err) => debugLog(`Email OTP: Script injection failed: ${err.message}`));
+        }
       } else {
         debugLog(`Email OTP: No code found, retrying ${retryCount + 1}/${MAX_RETRIES}`);
         retryCount++;
