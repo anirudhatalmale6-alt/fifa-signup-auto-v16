@@ -1,15 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Multilogin 6 Proxy Toggle",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Starts with your custom proxy. Press Alt+Q to switch to Multilogin proxy.",
   "permissions": [
     "proxy",
-    "storage",
-    "tabs"
-  ],
-  "host_permissions": [
-    "<all_urls>"
+    "storage"
   ],
   "background": {
     "service_worker": "background.js"
