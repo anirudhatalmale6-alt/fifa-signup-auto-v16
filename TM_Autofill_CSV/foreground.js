@@ -1855,43 +1855,76 @@ async function handleIdentityIframeActions() {
 let htmlInterface = null; // Added by O
 let flag = false; // Added by O
 let radios = null; //Added by O
+
+// ============ FIFA OTP HELPER FUNCTION ============
+function triggerFifaOTP(profile) {
+  const email = profile.acc_email || profile.email;
+  console.log("[FIFA] triggerFifaOTP called with email:", email);
+
+  if (!email) {
+    console.log("[FIFA] ERROR: No email in profile!");
+    alert("No email found in profile! Check your accounts.csv");
+    return;
+  }
+
+  // Also do the autofill
+  chrome.runtime.sendMessage({ action: 'queryTabs' }, function(response) {
+    if (response && response.tabs && response.tabs[0]) {
+      const tab = response.tabs[0];
+      fifaAutofillHandler(profile, tab, {});
+    }
+  });
+
+  // Send OTP request to service worker
+  console.log("[FIFA] Sending getEmailOTP for:", email);
+  chrome.runtime.sendMessage({
+    action: 'getEmailOTP',
+    data: { email: email, otpType: 'fifa' }
+  }, function(response) {
+    console.log("[FIFA] OTP request sent, response:", response);
+  });
+}
+// ============ END FIFA OTP HELPER ============
+
 document.addEventListener(
   "keydown",
   function (e) {
-    // Debug: Log every keydown with Alt
-    if (e.altKey) {
-      console.log("[CSV DEBUG] Alt key pressed with:", e.code);
-    }
-
+    // ============ ALT+X HANDLER ============
     if (e.altKey && e.code && e.code == 'KeyX') {
-      console.log("[CSV DEBUG] Alt+X detected! URL:", window.location.href);
+      e.preventDefault();
+      console.log("[FIFA] Alt+X pressed on:", window.location.href);
 
-      // DIRECT FIFA OTP TEST - bypass everything else for FIFA pages
-      if (window.location.href.match(/fifa\.com/i)) {
-        console.log("[CSV DEBUG] FIFA page detected, triggering direct OTP flow");
+      // For FIFA pages - ALWAYS trigger OTP fetch directly
+      if (window.location.href.toLowerCase().includes('fifa')) {
+        console.log("[FIFA] Detected FIFA page - triggering OTP flow");
+
+        // Get profile from storage and trigger OTP
         chrome.storage.sync.get(["profileInfo"], function(data) {
-          console.log("[CSV DEBUG] profileInfo from storage:", data.profileInfo ? "EXISTS" : "MISSING");
-          if (data.profileInfo) {
-            const profile = JSON.parse(data.profileInfo);
-            console.log("[CSV DEBUG] Email from profile:", profile.acc_email);
-            if (profile.acc_email) {
-              console.log("[CSV DEBUG] Sending getEmailOTP message NOW");
-              chrome.runtime.sendMessage({
-                action: 'getEmailOTP',
-                data: { email: profile.acc_email, otpType: 'fifa' }
-              }, function(response) {
-                console.log("[CSV DEBUG] getEmailOTP response:", response);
-              });
-            } else {
-              console.log("[CSV DEBUG] ERROR: No email in profile!");
-            }
-          } else {
-            console.log("[CSV DEBUG] ERROR: No profileInfo in storage! Reloading from CSV...");
-            chrome.runtime.sendMessage({ action: "fetchProfileData" });
+          if (!data.profileInfo) {
+            console.log("[FIFA] No profile in storage - loading from CSV first");
+            chrome.runtime.sendMessage({ action: "fetchProfileData" }, function() {
+              // Wait a bit then retry
+              setTimeout(() => {
+                chrome.storage.sync.get(["profileInfo"], function(data2) {
+                  if (data2.profileInfo) {
+                    const profile = JSON.parse(data2.profileInfo);
+                    triggerFifaOTP(profile);
+                  } else {
+                    alert("No profile loaded! Press Alt+Q to select a profile first.");
+                  }
+                });
+              }, 500);
+            });
+            return;
           }
+
+          const profile = JSON.parse(data.profileInfo);
+          triggerFifaOTP(profile);
         });
+        return; // Don't run other handlers for FIFA
       }
 
+      // Non-FIFA pages - use original handler
       if (window.location.hostname.includes('identity.ticketmaster')) {
         handleIdentityIframeActions();
       } else {

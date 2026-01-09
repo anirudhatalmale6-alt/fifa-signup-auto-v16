@@ -80,47 +80,78 @@ function changeValueReact(el, value) {
 
 
 function dynamicFunctionForEmailOTP(code) {
+ console.log("[OTP FILL] dynamicFunctionForEmailOTP called with code:", code);
+
  function changeValueReact(el, value) {
    if (!el) return false;
-   
+   console.log("[OTP FILL] Filling element:", el.id || el.name || el.className);
+
    let input = el;
    let lastValue = input.value;
    input.value = value;
-   
+
    let event = new Event('input', { bubbles: true });
    event.simulated = true;
-   
+
    let tracker = input._valueTracker;
    if (tracker) {
      tracker.setValue(lastValue);
    }
-   
+
    input.dispatchEvent(event);
+
+   // Also dispatch change event for React
+   let changeEvent = new Event('change', { bubbles: true });
+   input.dispatchEvent(changeEvent);
+
    return true;
  }
- 
+
+ // All possible OTP selectors including FIFA
  const selectors = [
-   "input#mfa-code-input-field",
+   // FIFA selectors
+   "input#otp",
    "input[name='otp']",
+   "input[placeholder='Enter Code']",
+   "input[placeholder*='code' i]",
+   "input[placeholder*='Code' i]",
+   "input[type='text'][maxlength='6']",
+   // TicketMaster selectors
+   "input#mfa-code-input-field",
    "input#otp-input-input",
    "input#mfa-code-input-field-input",
-   'input#otp',
-   'input#iOttText'
+   // Microsoft selectors
+   "input#iOttText",
+   // Generic OTP selectors
+   "input[autocomplete='one-time-code']",
+   "input.otp-input",
+   "input.verification-code"
  ];
- 
+
  let filled = false;
- 
+
  selectors.forEach(selector => {
-   const elements = document.querySelectorAll(selector);
-   if (elements.length > 0) {
-     elements.forEach(element => {
-       if (changeValueReact(element, code)) {
-         filled = true;
-       }
-     });
+   try {
+     const elements = document.querySelectorAll(selector);
+     if (elements.length > 0) {
+       console.log("[OTP FILL] Found", elements.length, "elements for selector:", selector);
+       elements.forEach(element => {
+         if (changeValueReact(element, code)) {
+           filled = true;
+           console.log("[OTP FILL] Successfully filled element");
+         }
+       });
+     }
+   } catch (e) {
+     console.log("[OTP FILL] Error with selector", selector, e);
    }
  });
- 
+
+ if (!filled) {
+   console.log("[OTP FILL] No elements found, showing alert with code");
+   alert("OTP Code: " + code + "\n\nPaste this into the OTP field manually.");
+ }
+
  return filled;
 }
 
